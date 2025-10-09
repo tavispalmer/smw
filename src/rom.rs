@@ -1,4 +1,4 @@
-use std::{ffi::{c_int, c_uchar, c_uint, c_void}, mem::{self, MaybeUninit}, ops::{Deref, DerefMut, Index, IndexMut}, ptr, slice::SliceIndex};
+use std::{mem::{self, MaybeUninit}, ops::{Deref, DerefMut, Index, IndexMut}, ptr, slice::SliceIndex};
 
 // smw rom
 pub struct Rom {

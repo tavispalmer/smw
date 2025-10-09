@@ -5,6 +5,7 @@ use gfx::Gfx;
 use crate::rom::Rom;
 
 mod ffi;
+mod mem;
 mod retro;
 mod rom;
 
