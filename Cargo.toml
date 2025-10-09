@@ -1,0 +1,11 @@
+[package]
+name = "smw"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "smw"
+crate-type = ["cdylib"]
+
+[dependencies]
+gfx = {path = "../gfx/gfx"}
