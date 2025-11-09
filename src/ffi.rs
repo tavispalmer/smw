@@ -133,7 +133,14 @@ extern "C" fn retro_set_controller_port_device(_port: c_uint, _device: c_uint) {
 extern "C" fn retro_reset() {}
 
 #[unsafe(no_mangle)]
-extern "C" fn retro_run() {}
+extern "C" fn retro_run() {
+    unsafe {
+        #[allow(static_mut_refs)]
+        let app = APP.assume_init_mut();
+
+        app.run();
+    }
+}
 
 #[unsafe(no_mangle)]
 extern "C" fn retro_serialize_size() -> usize { 0 }

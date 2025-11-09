@@ -1,6 +1,6 @@
 use crate::mem::Mem;
 
-struct Cpu {
+pub struct Cpu {
     // cpu state
     a: u16,
     x: u16,
@@ -179,7 +179,7 @@ impl Cpu {
             0x75 => panic!("unknown opcode 0x75"),
             0x76 => panic!("unknown opcode 0x76"),
             0x77 => panic!("unknown opcode 0x77"),
-            0x78 => panic!("unknown opcode 0x78"),
+            0x78 => self.sei(),
             0x79 => panic!("unknown opcode 0x79"),
             0x7a => panic!("unknown opcode 0x7a"),
             0x7b => panic!("unknown opcode 0x7b"),
