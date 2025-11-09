@@ -348,5 +348,97 @@ impl Cpu {
             self.y &= 0xff;
         }
     }
+
+    // increment/decrement operations
+    const fn dec8(&mut self, rhs: u8) -> u8 {
+        let result = rhs.wrapping_sub(1);
+        self.set_zero_negative8(result);
+        result
+    }
+    const fn dec16(&mut self, rhs: u16) -> u16 {
+        let result = rhs.wrapping_sub(1);
+        self.set_zero_negative16(result);
+        result
+    }
+    const fn inc8(&mut self, rhs: u8) -> u8 {
+        let result = rhs.wrapping_add(1);
+        self.set_zero_negative8(result);
+        result
+    }
+    const fn inc16(&mut self, rhs: u16) -> u16 {
+        let result = rhs.wrapping_add(1);
+        self.set_zero_negative16(result);
+        result
+    }
+    const fn dex(&mut self) {
+        if self.index_mode_8() {
+            self.x = (self.x & 0xff00) | self.dec8(self.x as u8) as u16
+        } else {
+            self.x = self.dec16(self.x)
+        }
+    }
+    const fn dey(&mut self) {
+        if self.index_mode_8() {
+            self.y = (self.y & 0xff00) | self.dec8(self.y as u8) as u16
+        } else {
+            self.y = self.dec16(self.y)
+        }
+    }
+    const fn inx(&mut self) {
+        if self.index_mode_8() {
+            self.x = (self.x & 0xff00) | self.inc8(self.x as u8) as u16
+        } else {
+            self.x = self.inc16(self.x)
+        }
+    }
+    const fn iny(&mut self) {
+        if self.index_mode_8() {
+            self.y = (self.y & 0xff00) | self.inc8(self.y as u8) as u16
+        } else {
+            self.y = self.inc16(self.y)
+        }
+    }
+    const fn dec_a(&mut self) {
+        if self.memory_mode_8() {
+            self.a = (self.a & 0xff00) | self.dec8(self.a as u8) as u16
+        } else {
+            self.a = self.dec16(self.a)
+        }
+    }
+    const fn inc_a(&mut self) {
+        if self.memory_mode_8() {
+            self.a = (self.a & 0xff00) | self.inc8(self.a as u8) as u16
+        } else {
+            self.a = self.inc16(self.a)
+        }
+    }
+
+    const fn cmp(&mut self, rhs: u16) {
+        if self.memory_mode_8() {
+            self.set_carry(self.a as u8 >= rhs as u8);
+            self.set_zero_negative8((self.a as u8).wrapping_sub(rhs as u8));
+        } else {
+            self.set_carry(self.a >= rhs);
+            self.set_zero_negative16(self.a.wrapping_sub(rhs));
+        }
+    }
+    const fn cpx(&mut self, rhs: u16) {
+        if self.index_mode_8() {
+            self.set_carry(self.x as u8 >= rhs as u8);
+            self.set_zero_negative8((self.x as u8).wrapping_sub(rhs as u8));
+        } else {
+            self.set_carry(self.x >= rhs);
+            self.set_zero_negative16(self.x.wrapping_sub(rhs));
+        }
+    }
+    const fn cpy(&mut self, rhs: u16) {
+        if self.index_mode_8() {
+            self.set_carry(self.y as u8 >= rhs as u8);
+            self.set_zero_negative8((self.y as u8).wrapping_sub(rhs as u8));
+        } else {
+            self.set_carry(self.y >= rhs);
+            self.set_zero_negative16(self.y.wrapping_sub(rhs));
+        }
+    }
 }
 
