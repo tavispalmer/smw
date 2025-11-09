@@ -83,7 +83,7 @@ impl Cpu {
             0x15 => panic!("unknown opcode 0x15"),
             0x16 => panic!("unknown opcode 0x16"),
             0x17 => panic!("unknown opcode 0x17"),
-            0x18 => panic!("unknown opcode 0x18"),
+            0x18 => self.clc(),
             0x19 => panic!("unknown opcode 0x19"),
             0x1a => panic!("unknown opcode 0x1a"),
             0x1b => panic!("unknown opcode 0x1b"),
@@ -115,7 +115,7 @@ impl Cpu {
             0x35 => panic!("unknown opcode 0x35"),
             0x36 => panic!("unknown opcode 0x36"),
             0x37 => panic!("unknown opcode 0x37"),
-            0x38 => panic!("unknown opcode 0x38"),
+            0x38 => self.sec(),
             0x39 => panic!("unknown opcode 0x39"),
             0x3a => panic!("unknown opcode 0x3a"),
             0x3b => panic!("unknown opcode 0x3b"),
@@ -147,7 +147,7 @@ impl Cpu {
             0x55 => panic!("unknown opcode 0x55"),
             0x56 => panic!("unknown opcode 0x56"),
             0x57 => panic!("unknown opcode 0x57"),
-            0x58 => panic!("unknown opcode 0x58"),
+            0x58 => self.cli(),
             0x59 => panic!("unknown opcode 0x59"),
             0x5a => panic!("unknown opcode 0x5a"),
             0x5b => panic!("unknown opcode 0x5b"),
@@ -243,7 +243,7 @@ impl Cpu {
             0xb5 => panic!("unknown opcode 0xb5"),
             0xb6 => panic!("unknown opcode 0xb6"),
             0xb7 => panic!("unknown opcode 0xb7"),
-            0xb8 => panic!("unknown opcode 0xb8"),
+            0xb8 => self.clv(),
             0xb9 => panic!("unknown opcode 0xb9"),
             0xba => panic!("unknown opcode 0xba"),
             0xbb => panic!("unknown opcode 0xbb"),
@@ -253,7 +253,7 @@ impl Cpu {
             0xbf => panic!("unknown opcode 0xbf"),
             0xc0 => panic!("unknown opcode 0xc0"),
             0xc1 => panic!("unknown opcode 0xc1"),
-            0xc2 => panic!("unknown opcode 0xc2"),
+            0xc2 => { let rhs = self.read_code(); self.rep(rhs) },
             0xc3 => panic!("unknown opcode 0xc3"),
             0xc4 => panic!("unknown opcode 0xc4"),
             0xc5 => panic!("unknown opcode 0xc5"),
@@ -275,7 +275,7 @@ impl Cpu {
             0xd5 => panic!("unknown opcode 0xd5"),
             0xd6 => panic!("unknown opcode 0xd6"),
             0xd7 => panic!("unknown opcode 0xd7"),
-            0xd8 => panic!("unknown opcode 0xd8"),
+            0xd8 => self.cld(),
             0xd9 => panic!("unknown opcode 0xd9"),
             0xda => panic!("unknown opcode 0xda"),
             0xdb => panic!("unknown opcode 0xdb"),
@@ -285,7 +285,7 @@ impl Cpu {
             0xdf => panic!("unknown opcode 0xdf"),
             0xe0 => panic!("unknown opcode 0xe0"),
             0xe1 => panic!("unknown opcode 0xe1"),
-            0xe2 => panic!("unknown opcode 0xe2"),
+            0xe2 => { let rhs = self.read_code(); self.sep(rhs) },
             0xe3 => panic!("unknown opcode 0xe3"),
             0xe4 => panic!("unknown opcode 0xe4"),
             0xe5 => panic!("unknown opcode 0xe5"),
@@ -307,7 +307,7 @@ impl Cpu {
             0xf5 => panic!("unknown opcode 0xf5"),
             0xf6 => panic!("unknown opcode 0xf6"),
             0xf7 => panic!("unknown opcode 0xf7"),
-            0xf8 => panic!("unknown opcode 0xf8"),
+            0xf8 => self.sed(),
             0xf9 => panic!("unknown opcode 0xf9"),
             0xfa => panic!("unknown opcode 0xfa"),
             0xfb => panic!("unknown opcode 0xfb"),
@@ -434,6 +434,12 @@ impl Cpu {
         let result = self.mem.read(((self.k as u32) << 16) | self.pc as u32);
         self.pc = self.pc.wrapping_add(1);
         result
+    }
+    #[inline]
+    fn read16_code(&mut self) -> u16 {
+        let lsb = self.read_code();
+        let msb = self.read_code();
+        ((msb as u16) << 8) | lsb as u16
     }
 
     // instructions
