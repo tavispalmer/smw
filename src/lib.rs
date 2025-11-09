@@ -4,6 +4,7 @@ use gfx::Gfx;
 
 use crate::rom::Rom;
 
+mod cpu;
 mod ffi;
 mod mem;
 mod retro;

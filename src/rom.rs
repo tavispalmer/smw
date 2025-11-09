@@ -64,7 +64,7 @@ impl<I: SliceIndex<[u8]>> IndexMut<I> for Rom {
 fn sha1sum(data: &[u8]) -> [u8; 20] {
     unsafe {
         let mut md = [MaybeUninit::<u8>::uninit(); 20];
-        SHA1(data.as_ptr(), data.len(), md[0].as_mut_ptr());
+        SHA1(data.as_ptr(), data.len(), md.as_mut_ptr() as _);
         mem::transmute(md)
     }
 }
