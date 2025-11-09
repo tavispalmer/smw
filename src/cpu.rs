@@ -58,7 +58,7 @@ impl Cpu {
     }
 
     fn exec(&mut self) {
-        match self.mem.read(((self.k as u32) << 16) | self.pc as u32) {
+        match self.read_code() {
             0x00 => panic!("unknown opcode 0x00"),
             0x01 => panic!("unknown opcode 0x01"),
             0x02 => panic!("unknown opcode 0x02"),
@@ -426,6 +426,14 @@ impl Cpu {
     const fn set_zero_negative16(&mut self, value: u16) {
         self.set_zero(value == 0);
         self.set_negative((value as i16) < 0);
+    }
+
+    // memory
+    #[inline]
+    fn read_code(&mut self) -> u8 {
+        let result = self.mem.read(((self.k as u32) << 16) | self.pc as u32);
+        self.pc = self.pc.wrapping_add(1);
+        result
     }
 
     // instructions
