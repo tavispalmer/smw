@@ -304,7 +304,7 @@ impl Cpu {
             0xf8 => self.sed(),
             0xf9 => panic!("unknown opcode 0xf9"),
             0xfa => panic!("unknown opcode 0xfa"),
-            0xfb => panic!("unknown opcode 0xfb"),
+            0xfb => self.xce(),
             0xfc => panic!("unknown opcode 0xfc"),
             0xfd => panic!("unknown opcode 0xfd"),
             0xfe => panic!("unknown opcode 0xfe"),
@@ -826,5 +826,16 @@ impl Cpu {
     const fn jmp(&mut self, rhs: u16) {
         self.pc = rhs
     }
-}
 
+    #[inline]
+    const fn xce(&mut self) {
+        let carry = self.carry();
+        self.set_carry(self.emulation_mode);
+        self.emulation_mode = carry;
+
+        if self.emulation_mode {
+            self.sep(Self::INDEX_MODE_8 | Self::MEMORY_MODE_8);
+            self.sp = 0x100 | (self.sp & 0xff);
+        }
+    }
+}
