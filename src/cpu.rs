@@ -85,9 +85,9 @@ impl Cpu {
             0x1d => panic!("unknown opcode 0x1d"),
             0x1e => panic!("unknown opcode 0x1e"),
             0x1f => panic!("unknown opcode 0x1f"),
-            0x20 => panic!("unknown opcode 0x20"),
+            0x20 => { let rhs = self.read16_code(); self.jsr(rhs) },
             0x21 => panic!("unknown opcode 0x21"),
-            0x22 => panic!("unknown opcode 0x22"),
+            0x22 => { let rhs = self.read24_code(); self.jsl(rhs) },
             0x23 => panic!("unknown opcode 0x23"),
             0x24 => panic!("unknown opcode 0x24"),
             0x25 => panic!("unknown opcode 0x25"),
@@ -149,7 +149,7 @@ impl Cpu {
             0x5d => panic!("unknown opcode 0x5d"),
             0x5e => panic!("unknown opcode 0x5e"),
             0x5f => panic!("unknown opcode 0x5f"),
-            0x60 => panic!("unknown opcode 0x60"),
+            0x60 => self.rts(),
             0x61 => panic!("unknown opcode 0x61"),
             0x62 => panic!("unknown opcode 0x62"),
             0x63 => panic!("unknown opcode 0x63"),
@@ -160,7 +160,7 @@ impl Cpu {
             0x68 => panic!("unknown opcode 0x68"),
             0x69 => panic!("unknown opcode 0x69"),
             0x6a => panic!("unknown opcode 0x6a"),
-            0x6b => panic!("unknown opcode 0x6b"),
+            0x6b => self.rtl(),
             0x6c => panic!("unknown opcode 0x6c"),
             0x6d => panic!("unknown opcode 0x6d"),
             0x6e => panic!("unknown opcode 0x6e"),
@@ -450,6 +450,71 @@ impl Cpu {
         let b3 = self.read_code();
         ((b3 as u32) << 16) | ((b2 as u32) << 8) | b1 as u32
     }
+    #[inline]
+    const fn restrict_sp(&mut self) {
+        self.sp = 0x100 | (self.sp & 0xff)
+    }
+    #[inline]
+    fn push_unchecked(&mut self, rhs: u8) {
+        self.mem.write(self.sp as u32, rhs);
+        self.sp = self.sp.wrapping_sub(1);
+    }
+    #[inline]
+    fn push(&mut self, rhs: u8) {
+        self.push_unchecked(rhs);
+        if self.emulation_mode {
+            self.restrict_sp()
+        }
+    }
+    #[inline]
+    fn pop_unchecked(&mut self) -> u8 {
+        self.sp = self.sp.wrapping_add(1);
+        self.mem.read(self.sp as u32)
+    }
+    #[inline]
+    fn pop(&mut self) -> u8 {
+        let value = self.pop_unchecked();
+        if self.emulation_mode {
+            self.restrict_sp()
+        }
+        value
+    }
+    #[inline]
+    fn push_word(&mut self, rhs: u16) {
+        self.push((rhs >> 8) as u8);
+        self.push(rhs as u8);
+    }
+    #[inline]
+    fn pop_word_unchecked(&mut self) -> u16 {
+        let lo = self.pop_unchecked();
+        let hi = self.pop_unchecked();
+        ((hi as u16) << 8) | lo as u16
+    }
+    #[inline]
+    fn pop_word(&mut self) -> u16 {
+        let lo = self.pop();
+        let hi = self.pop();
+        ((hi as u16) << 8) | lo as u16
+    }
+    #[inline]
+    fn push_long(&mut self, rhs: u32) {
+        self.push_unchecked((rhs >> 16) as u8);
+        self.push_unchecked((rhs >> 8) as u8);
+        self.push_unchecked(rhs as u8);
+        if self.emulation_mode {
+            self.restrict_sp()
+        }
+    }
+    #[inline]
+    fn pop_long(&mut self) -> u32 {
+        let b1 = self.pop_unchecked();
+        let b2 = self.pop_unchecked();
+        let b3 = self.pop_unchecked();
+        if self.emulation_mode {
+            self.restrict_sp()
+        }
+        ((b3 as u32) << 16) | ((b2 as u32) << 8) | b1 as u32
+    }
 
     // addr mode
     #[inline]
@@ -474,11 +539,6 @@ impl Cpu {
     #[inline]
     fn read_addr_abs_lng_idx_x(&mut self) -> u32 {
         self.read24_code().wrapping_add(self.x as u32) & 0xffffff
-    }
-    #[inline]
-    fn read_addr_abs_jmp(&mut self) -> u32 {
-        let addr = self.read16_code();
-        self.as_code_addr(addr)
     }
     #[inline]
     fn read_addr_abs_ind(&mut self) -> u32 {
@@ -817,6 +877,7 @@ impl Cpu {
         }
     }
 
+    // jump instructions
     #[inline]
     const fn jml(&mut self, rhs: u32) {
         self.k = (rhs >> 16) as u8;
@@ -825,6 +886,28 @@ impl Cpu {
     #[inline]
     const fn jmp(&mut self, rhs: u16) {
         self.pc = rhs
+    }
+    #[inline]
+    fn jsl(&mut self, rhs: u32) {
+        self.push_long(((self.k as u32) << 16) | self.pc.wrapping_sub(1) as u32);
+        self.k = (rhs >> 16) as u8;
+        self.pc = rhs as u16;
+    }
+    
+    #[inline]
+    fn jsr(&mut self, rhs: u16) {
+        self.push_word(self.pc.wrapping_sub(1));
+        self.pc = rhs;
+    }
+    #[inline]
+    fn rtl(&mut self) {
+        let addr = self.pop_long();
+        self.k = (addr >> 16) as u8;
+        self.pc = addr as u16;
+    }
+    #[inline]
+    fn rts(&mut self) {
+        self.pc = self.pop_word().wrapping_add(1);
     }
 
     #[inline]
@@ -835,7 +918,7 @@ impl Cpu {
 
         if self.emulation_mode {
             self.sep(Self::INDEX_MODE_8 | Self::MEMORY_MODE_8);
-            self.sp = 0x100 | (self.sp & 0xff);
+            self.restrict_sp();
         }
     }
 }
