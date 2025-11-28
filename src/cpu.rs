@@ -499,6 +499,7 @@ impl Cpu {
     }
 
     // instructions
+    #[inline]
     const fn adc8(&mut self, rhs: u8) {
         let mut result;
         if self.decimal() {
@@ -521,6 +522,7 @@ impl Cpu {
 
         self.a = (self.a & 0xff00) | (result & 0xff)
     }
+    #[inline]
     const fn adc16(&mut self, rhs: u16) {
         let mut result;
         if self.decimal() {
@@ -549,6 +551,7 @@ impl Cpu {
 
         self.a = result as u16
     }
+    #[inline]
     const fn adc(&mut self, rhs: u16) {
         if self.memory_mode_8() {
             self.adc8(rhs as u8)
@@ -557,6 +560,7 @@ impl Cpu {
         }
     }
 
+    #[inline]
     const fn sbc8(&mut self, rhs: u8) {
         let rhs = !rhs;
         let mut result;
@@ -580,6 +584,7 @@ impl Cpu {
 
         self.a = (self.a & 0xff00) | (result & 0xff)
     }
+    #[inline]
     const fn sbc16(&mut self, rhs: u16) {
         let rhs = !rhs;
         let mut result;
@@ -609,6 +614,7 @@ impl Cpu {
 
         self.a = result as u16
     }
+    #[inline]
     const fn sbc(&mut self, rhs: u16) {
         if self.memory_mode_8() {
             self.sbc8(rhs as u8)
@@ -618,59 +624,77 @@ impl Cpu {
     }
 
     // branch operations
+    #[inline]
     const fn bcc(&mut self, rhs: u8) {
         if !self.carry() { self.bra(rhs) }
     }
+    #[inline]
     const fn bcs(&mut self, rhs: u8) {
         if self.carry() { self.bra(rhs) }
     }
+    #[inline]
     const fn beq(&mut self, rhs: u8) {
         if self.zero() { self.bra(rhs) }
     }
+    #[inline]
     const fn bmi(&mut self, rhs: u8) {
         if self.negative() { self.bra(rhs) }
     }
+    #[inline]
     const fn bne(&mut self, rhs: u8) {
         if !self.zero() { self.bra(rhs) }
     }
+    #[inline]
     const fn bpl(&mut self, rhs: u8) {
         if !self.negative() { self.bra(rhs) }
     }
+    #[inline]
     const fn bra(&mut self, rhs: u8) {
         self.pc = self.pc.wrapping_add(rhs as i8 as u16)
     }
+    #[inline]
     const fn brl(&mut self, rhs: u16) {
         self.pc = self.pc.wrapping_add(rhs)
     }
+    #[inline]
     const fn bvc(&mut self, rhs: u8) {
         if !self.overflow() { self.bra(rhs) }
     }
+    #[inline]
     const fn bvs(&mut self, rhs: u8) {
         if self.overflow() { self.bra(rhs) }
     }
 
     // set/clear flag instructions
+    #[inline]
     const fn clc(&mut self) {
         self.set_carry(false)
     }
+    #[inline]
     const fn cld(&mut self) {
         self.set_decimal(false)
     }
+    #[inline]
     const fn cli(&mut self) {
         self.set_irq_disable(false)
     }
+    #[inline]
     const fn clv(&mut self) {
         self.set_overflow(false)
     }
+    #[inline]
     const fn sec(&mut self) {
         self.set_carry(true)
     }
+    #[inline]
     const fn sed(&mut self) {
         self.set_decimal(true)
     }
+    #[inline]
     const fn sei(&mut self) {
         self.set_irq_disable(true)
     }
+    #[inline]
     const fn rep(&mut self, rhs: u8) {
         self.ps &= !rhs;
         if self.emulation_mode {
@@ -678,6 +702,7 @@ impl Cpu {
             self.set_index_mode_8(true);
         }
     }
+    #[inline]
     const fn sep(&mut self, rhs: u8) {
         self.ps |= rhs;
         if self.index_mode_8() {
@@ -687,26 +712,31 @@ impl Cpu {
     }
 
     // increment/decrement operations
+    #[inline]
     const fn dec8(&mut self, rhs: u8) -> u8 {
         let result = rhs.wrapping_sub(1);
         self.set_zero_negative8(result);
         result
     }
+    #[inline]
     const fn dec16(&mut self, rhs: u16) -> u16 {
         let result = rhs.wrapping_sub(1);
         self.set_zero_negative16(result);
         result
     }
+    #[inline]
     const fn inc8(&mut self, rhs: u8) -> u8 {
         let result = rhs.wrapping_add(1);
         self.set_zero_negative8(result);
         result
     }
+    #[inline]
     const fn inc16(&mut self, rhs: u16) -> u16 {
         let result = rhs.wrapping_add(1);
         self.set_zero_negative16(result);
         result
     }
+    #[inline]
     const fn dex(&mut self) {
         if self.index_mode_8() {
             self.x = (self.x & 0xff00) | self.dec8(self.x as u8) as u16
@@ -714,6 +744,7 @@ impl Cpu {
             self.x = self.dec16(self.x)
         }
     }
+    #[inline]
     const fn dey(&mut self) {
         if self.index_mode_8() {
             self.y = (self.y & 0xff00) | self.dec8(self.y as u8) as u16
@@ -721,6 +752,7 @@ impl Cpu {
             self.y = self.dec16(self.y)
         }
     }
+    #[inline]
     const fn inx(&mut self) {
         if self.index_mode_8() {
             self.x = (self.x & 0xff00) | self.inc8(self.x as u8) as u16
@@ -728,6 +760,7 @@ impl Cpu {
             self.x = self.inc16(self.x)
         }
     }
+    #[inline]
     const fn iny(&mut self) {
         if self.index_mode_8() {
             self.y = (self.y & 0xff00) | self.inc8(self.y as u8) as u16
@@ -735,6 +768,7 @@ impl Cpu {
             self.y = self.inc16(self.y)
         }
     }
+    #[inline]
     const fn dec_a(&mut self) {
         if self.memory_mode_8() {
             self.a = (self.a & 0xff00) | self.dec8(self.a as u8) as u16
@@ -742,6 +776,7 @@ impl Cpu {
             self.a = self.dec16(self.a)
         }
     }
+    #[inline]
     const fn inc_a(&mut self) {
         if self.memory_mode_8() {
             self.a = (self.a & 0xff00) | self.inc8(self.a as u8) as u16
@@ -751,6 +786,7 @@ impl Cpu {
     }
 
     // compare instructions
+    #[inline]
     const fn cmp(&mut self, rhs: u16) {
         if self.memory_mode_8() {
             self.set_carry(self.a as u8 >= rhs as u8);
@@ -760,6 +796,7 @@ impl Cpu {
             self.set_zero_negative16(self.a.wrapping_sub(rhs));
         }
     }
+    #[inline]
     const fn cpx(&mut self, rhs: u16) {
         if self.index_mode_8() {
             self.set_carry(self.x as u8 >= rhs as u8);
@@ -769,6 +806,7 @@ impl Cpu {
             self.set_zero_negative16(self.x.wrapping_sub(rhs));
         }
     }
+    #[inline]
     const fn cpy(&mut self, rhs: u16) {
         if self.index_mode_8() {
             self.set_carry(self.y as u8 >= rhs as u8);
@@ -779,10 +817,12 @@ impl Cpu {
         }
     }
 
+    #[inline]
     const fn jml(&mut self, rhs: u32) {
         self.k = (rhs >> 16) as u8;
         self.pc = rhs as u16;
     }
+    #[inline]
     const fn jmp(&mut self, rhs: u16) {
         self.pc = rhs
     }
