@@ -15,10 +15,6 @@ pub struct Cpu {
 
     // memory
     mem: Mem,
-
-    // other
-    read_write_mask: u32,
-    operand: u32,
 }
 
 impl Cpu {
@@ -46,8 +42,6 @@ impl Cpu {
             ps: Self::IRQ_DISABLE,
             emulation_mode: true,
             mem,
-            read_write_mask: 0xffffff,
-            operand: 0,
         }
     }
 
@@ -430,6 +424,14 @@ impl Cpu {
 
     // memory
     #[inline]
+    fn as_code_addr(&self, addr: u16) -> u32 {
+        ((self.k as u32) << 16) | addr as u32
+    }
+    #[inline]
+    fn as_data_addr(&self, addr: u16) -> u32 {
+        ((self.dbr as u32) << 16) | addr as u32
+    }
+    #[inline]
     fn read_code(&mut self) -> u8 {
         let result = self.mem.read(((self.k as u32) << 16) | self.pc as u32);
         self.pc = self.pc.wrapping_add(1);
@@ -440,6 +442,60 @@ impl Cpu {
         let lsb = self.read_code();
         let msb = self.read_code();
         ((msb as u16) << 8) | lsb as u16
+    }
+    #[inline]
+    fn read24_code(&mut self) -> u32 {
+        let b1 = self.read_code();
+        let b2 = self.read_code();
+        let b3 = self.read_code();
+        ((b3 as u32) << 16) | ((b2 as u32) << 8) | b1 as u32
+    }
+
+    // addr mode
+    #[inline]
+    fn read_addr_abs(&mut self) -> u32 {
+        let addr = self.read16_code();
+        self.as_data_addr(addr)
+    }
+    #[inline]
+    fn read_addr_abs_idx_x(&mut self) -> u32 {
+        let addr = self.read16_code();
+        self.as_data_addr(addr).wrapping_add(self.x as u32) & 0xffffff
+    }
+    #[inline]
+    fn read_addr_abs_idx_y(&mut self) -> u32 {
+        let addr = self.read16_code();
+        self.as_data_addr(addr).wrapping_add(self.y as u32) & 0xffffff
+    }
+    #[inline]
+    fn read_addr_abs_lng(&mut self) -> u32 {
+        self.read24_code()
+    }
+    #[inline]
+    fn read_addr_abs_lng_idx_x(&mut self) -> u32 {
+        self.read24_code().wrapping_add(self.x as u32) & 0xffffff
+    }
+    #[inline]
+    fn read_addr_abs_jmp(&mut self) -> u32 {
+        let addr = self.read16_code();
+        self.as_code_addr(addr)
+    }
+    #[inline]
+    fn read_addr_abs_ind(&mut self) -> u32 {
+        let addr = self.read16_code();
+        let lsb = self.mem.read(addr as u32);
+        let msb = self.mem.read(addr.wrapping_add(1) as u32);
+        ((msb as u32) << 8) | lsb as u32
+    }
+    #[inline]
+    fn read_addr_abs_ind_lng(&mut self) -> u32 {
+        let addr = self.read16_code();
+
+        let b1 = self.mem.read(addr as u32);
+        let b2 = self.mem.read(addr.wrapping_add(1) as u32);
+        let b3 = self.mem.read(addr.wrapping_add(2) as u32);
+
+        ((b3 as u32) << 16) | ((b2 as u32) << 8) | b1 as u32
     }
 
     // instructions
