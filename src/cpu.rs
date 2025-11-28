@@ -893,7 +893,6 @@ impl Cpu {
         self.k = (rhs >> 16) as u8;
         self.pc = rhs as u16;
     }
-    
     #[inline]
     fn jsr(&mut self, rhs: u16) {
         self.push_word(self.pc.wrapping_sub(1));
@@ -908,6 +907,38 @@ impl Cpu {
     #[inline]
     fn rts(&mut self) {
         self.pc = self.pop_word().wrapping_add(1);
+    }
+
+    // bitwise operations
+    #[inline]
+    const fn and(&mut self, rhs: u16) {
+        if self.memory_mode_8() {
+            self.a &= rhs as u8 as u16;
+            self.set_zero_negative8(self.a as u8);
+        } else {
+            self.a &= rhs;
+            self.set_zero_negative16(self.a);
+        }
+    }
+    #[inline]
+    const fn eor(&mut self, rhs: u16) {
+        if self.memory_mode_8() {
+            self.a ^= rhs as u8 as u16;
+            self.set_zero_negative8(self.a as u8);
+        } else {
+            self.a ^= rhs;
+            self.set_zero_negative16(self.a);
+        }
+    }
+    #[inline]
+    const fn ora(&mut self, rhs: u16) {
+        if self.memory_mode_8() {
+            self.a |= rhs as u8 as u16;
+            self.set_zero_negative8(self.a as u8);
+        } else {
+            self.a |= rhs;
+            self.set_zero_negative16(self.a);
+        }
     }
 
     #[inline]
