@@ -424,12 +424,20 @@ impl Cpu {
 
     // memory
     #[inline]
-    fn as_code_addr(&self, addr: u16) -> u32 {
+    const fn as_code_addr(&self, addr: u16) -> u32 {
         ((self.k as u32) << 16) | addr as u32
     }
     #[inline]
-    fn as_data_addr(&self, addr: u16) -> u32 {
+    const fn as_data_addr(&self, addr: u16) -> u32 {
         ((self.dbr as u32) << 16) | addr as u32
+    }
+    #[inline]
+    const fn as_direct_addr(&self, addr: u16) -> u32 {
+        if self.emulation_mode && (self.d & 0xff) == 0 {
+            ((self.d & 0xff00) | (addr & 0xff)) as u32
+        } else {
+            self.d.wrapping_add(addr) as u32
+        }
     }
     #[inline]
     fn read_code(&mut self) -> u8 {
@@ -483,12 +491,6 @@ impl Cpu {
     fn push_word(&mut self, rhs: u16) {
         self.push((rhs >> 8) as u8);
         self.push(rhs as u8);
-    }
-    #[inline]
-    fn pop_word_unchecked(&mut self) -> u16 {
-        let lo = self.pop_unchecked();
-        let hi = self.pop_unchecked();
-        ((hi as u16) << 8) | lo as u16
     }
     #[inline]
     fn pop_word(&mut self) -> u16 {
