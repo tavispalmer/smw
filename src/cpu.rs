@@ -85,9 +85,9 @@ impl Cpu {
             0x1d => panic!("unknown opcode 0x1d"),
             0x1e => panic!("unknown opcode 0x1e"),
             0x1f => panic!("unknown opcode 0x1f"),
-            0x20 => { let rhs = self.read16_code(); self.jsr(rhs) },
+            0x20 => { let rhs = self.read_code_word(); self.jsr(rhs) },
             0x21 => panic!("unknown opcode 0x21"),
-            0x22 => { let rhs = self.read24_code(); self.jsl(rhs) },
+            0x22 => { let rhs = self.read_code_long(); self.jsl(rhs) },
             0x23 => panic!("unknown opcode 0x23"),
             0x24 => panic!("unknown opcode 0x24"),
             0x25 => panic!("unknown opcode 0x25"),
@@ -183,7 +183,7 @@ impl Cpu {
             0x7f => panic!("unknown opcode 0x7f"),
             0x80 => { let rhs = self.read_code(); self.bra(rhs) },
             0x81 => panic!("unknown opcode 0x81"),
-            0x82 => { let rhs = self.read16_code(); self.brl(rhs) },
+            0x82 => { let rhs = self.read_code_word(); self.brl(rhs) },
             0x83 => panic!("unknown opcode 0x83"),
             0x84 => panic!("unknown opcode 0x84"),
             0x85 => panic!("unknown opcode 0x85"),
@@ -438,13 +438,13 @@ impl Cpu {
         result
     }
     #[inline]
-    fn read16_code(&mut self) -> u16 {
+    fn read_code_word(&mut self) -> u16 {
         let lsb = self.read_code();
         let msb = self.read_code();
         ((msb as u16) << 8) | lsb as u16
     }
     #[inline]
-    fn read24_code(&mut self) -> u32 {
+    fn read_code_long(&mut self) -> u32 {
         let b1 = self.read_code();
         let b2 = self.read_code();
         let b3 = self.read_code();
@@ -519,37 +519,37 @@ impl Cpu {
     // addr mode
     #[inline]
     fn read_addr_abs(&mut self) -> u32 {
-        let addr = self.read16_code();
+        let addr = self.read_code_word();
         self.as_data_addr(addr)
     }
     #[inline]
     fn read_addr_abs_idx_x(&mut self) -> u32 {
-        let addr = self.read16_code();
+        let addr = self.read_code_word();
         self.as_data_addr(addr).wrapping_add(self.x as u32) & 0xffffff
     }
     #[inline]
     fn read_addr_abs_idx_y(&mut self) -> u32 {
-        let addr = self.read16_code();
+        let addr = self.read_code_word();
         self.as_data_addr(addr).wrapping_add(self.y as u32) & 0xffffff
     }
     #[inline]
     fn read_addr_abs_lng(&mut self) -> u32 {
-        self.read24_code()
+        self.read_code_long()
     }
     #[inline]
     fn read_addr_abs_lng_idx_x(&mut self) -> u32 {
-        self.read24_code().wrapping_add(self.x as u32) & 0xffffff
+        self.read_code_long().wrapping_add(self.x as u32) & 0xffffff
     }
     #[inline]
     fn read_addr_abs_ind(&mut self) -> u32 {
-        let addr = self.read16_code();
+        let addr = self.read_code_word();
         let lsb = self.mem.read(addr as u32);
         let msb = self.mem.read(addr.wrapping_add(1) as u32);
         ((msb as u32) << 8) | lsb as u32
     }
     #[inline]
     fn read_addr_abs_ind_lng(&mut self) -> u32 {
-        let addr = self.read16_code();
+        let addr = self.read_code_word();
 
         let b1 = self.mem.read(addr as u32);
         let b2 = self.mem.read(addr.wrapping_add(1) as u32);
