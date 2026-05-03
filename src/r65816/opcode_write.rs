@@ -63,18 +63,14 @@ impl<T: R65816Trait> R65816<T> {
         self.op_writedbr(
             self.aa.d().wrapping_add(
                 match I {
-                    0 => self.regs.a,
                     1 => self.regs.x,
                     2 => self.regs.y,
-                    3 => self.regs.z,
                     _ => unreachable!(),
                 }
                 .w() as u32,
             ),
             match N {
                 0 => self.regs.a,
-                1 => self.regs.x,
-                2 => self.regs.y,
                 3 => self.regs.z,
                 _ => unreachable!(),
             }
@@ -93,10 +89,8 @@ impl<T: R65816Trait> R65816<T> {
                 .d()
                 .wrapping_add(
                     match I {
-                        0 => self.regs.a,
                         1 => self.regs.x,
                         2 => self.regs.y,
-                        3 => self.regs.z,
                         _ => unreachable!(),
                     }
                     .w() as u32,
@@ -104,8 +98,6 @@ impl<T: R65816Trait> R65816<T> {
                 .wrapping_add(0),
             match N {
                 0 => self.regs.a,
-                1 => self.regs.x,
-                2 => self.regs.y,
                 3 => self.regs.z,
                 _ => unreachable!(),
             }
@@ -117,10 +109,8 @@ impl<T: R65816Trait> R65816<T> {
                 .d()
                 .wrapping_add(
                     match I {
-                        0 => self.regs.a,
                         1 => self.regs.x,
                         2 => self.regs.y,
-                        3 => self.regs.z,
                         _ => unreachable!(),
                     }
                     .w() as u32,
@@ -128,8 +118,6 @@ impl<T: R65816Trait> R65816<T> {
                 .wrapping_add(1),
             match N {
                 0 => self.regs.a,
-                1 => self.regs.x,
-                2 => self.regs.y,
                 3 => self.regs.z,
                 _ => unreachable!(),
             }
