@@ -792,6 +792,12 @@ impl<T: R65816Trait> R65816<T> {
         );
         Self::op_m(
             &mut op_table,
+            0x8f,
+            Self::op_write_longr_b::<Z>,
+            Self::op_write_longr_w::<Z>,
+        );
+        Self::op_m(
+            &mut op_table,
             0x99,
             Self::op_write_addrr_b::<A, Y>,
             Self::op_write_addrr_w::<A, Y>,
@@ -813,6 +819,12 @@ impl<T: R65816Trait> R65816<T> {
             0x9e,
             Self::op_write_addrr_b::<Z, X>,
             Self::op_write_addrr_w::<Z, X>,
+        );
+        Self::op_m(
+            &mut op_table,
+            0x9f,
+            Self::op_write_longr_b::<Z>,
+            Self::op_write_longr_w::<Z>,
         );
         Self::op_m(
             &mut op_table,

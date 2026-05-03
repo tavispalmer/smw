@@ -124,4 +124,63 @@ impl<T: R65816Trait> R65816<T> {
             .h(),
         );
     }
+
+    pub fn op_write_longr_b<const I: usize>(&mut self) {
+        let l = self.op_readpc();
+        self.aa.set_l(l);
+        let h = self.op_readpc();
+        self.aa.set_h(h);
+        let b = self.op_readpc();
+        self.aa.set_b(b);
+        self.child.last_cycle();
+        self.op_writelong(
+            self.aa.d().wrapping_add(
+                match I {
+                    1 => self.regs.x,
+                    3 => self.regs.z,
+                    _ => unreachable!(),
+                }
+                .w() as u32,
+            ),
+            self.regs.a.l(),
+        );
+    }
+
+    pub fn op_write_longr_w<const I: usize>(&mut self) {
+        let l = self.op_readpc();
+        self.aa.set_l(l);
+        let h = self.op_readpc();
+        self.aa.set_h(h);
+        let b = self.op_readpc();
+        self.aa.set_b(b);
+        self.op_writelong(
+            self.aa
+                .d()
+                .wrapping_add(
+                    match I {
+                        1 => self.regs.x,
+                        3 => self.regs.z,
+                        _ => unreachable!(),
+                    }
+                    .w() as u32,
+                )
+                .wrapping_add(0),
+            self.regs.a.l(),
+        );
+        self.child.last_cycle();
+        self.op_writelong(
+            self.aa
+                .d()
+                .wrapping_add(
+                    match I {
+                        1 => self.regs.x,
+                        3 => self.regs.z,
+                        _ => unreachable!(),
+                    }
+                    .w() as u32,
+                )
+                .wrapping_add(1),
+            self.regs.a.h(),
+        );
+    }
 }
