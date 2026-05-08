@@ -8,45 +8,15 @@ impl<T: R65816Trait> R65816<T> {
         *self.aa.l_mut() = self.op_readpc();
         *self.aa.h_mut() = self.op_readpc();
         self.child.last_cycle();
-        self.op_writedbr(
-            self.aa.d(),
-            match N {
-                0 => self.regs.a,
-                1 => self.regs.x,
-                2 => self.regs.y,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .l(),
-        )
+        self.op_writedbr(self.aa.d(), self.regs.r(N).l())
     }
 
     pub fn op_write_addr_w<const N: usize>(&mut self) {
         *self.aa.l_mut() = self.op_readpc();
         *self.aa.h_mut() = self.op_readpc();
-        self.op_writedbr(
-            self.aa.d().wrapping_add(0),
-            match N {
-                0 => self.regs.a,
-                1 => self.regs.x,
-                2 => self.regs.y,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .l(),
-        );
+        self.op_writedbr(self.aa.d().wrapping_add(0), self.regs.r(N).l());
         self.child.last_cycle();
-        self.op_writedbr(
-            self.aa.d().wrapping_add(1),
-            match N {
-                0 => self.regs.a,
-                1 => self.regs.x,
-                2 => self.regs.y,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .h(),
-        );
+        self.op_writedbr(self.aa.d().wrapping_add(1), self.regs.r(N).h());
     }
 
     pub fn op_write_addrr_b<const N: usize, const I: usize>(&mut self) {
@@ -55,20 +25,8 @@ impl<T: R65816Trait> R65816<T> {
         self.child.op_io();
         self.child.last_cycle();
         self.op_writedbr(
-            self.aa.d().wrapping_add(
-                match I {
-                    1 => self.regs.x,
-                    2 => self.regs.y,
-                    _ => unreachable!(),
-                }
-                .w() as u32,
-            ),
-            match N {
-                0 => self.regs.a,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .l(),
+            self.aa.d().wrapping_add(self.regs.r(I).w() as u32),
+            self.regs.r(N).l(),
         );
     }
 
@@ -79,41 +37,17 @@ impl<T: R65816Trait> R65816<T> {
         self.op_writedbr(
             self.aa
                 .d()
-                .wrapping_add(
-                    match I {
-                        1 => self.regs.x,
-                        2 => self.regs.y,
-                        _ => unreachable!(),
-                    }
-                    .w() as u32,
-                )
+                .wrapping_add(self.regs.r(I).w() as u32)
                 .wrapping_add(0),
-            match N {
-                0 => self.regs.a,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .l(),
+            self.regs.r(N).l(),
         );
         self.child.last_cycle();
         self.op_writedbr(
             self.aa
                 .d()
-                .wrapping_add(
-                    match I {
-                        1 => self.regs.x,
-                        2 => self.regs.y,
-                        _ => unreachable!(),
-                    }
-                    .w() as u32,
-                )
+                .wrapping_add(self.regs.r(I).w() as u32)
                 .wrapping_add(1),
-            match N {
-                0 => self.regs.a,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .h(),
+            self.regs.r(N).h(),
         );
     }
 
@@ -123,14 +57,7 @@ impl<T: R65816Trait> R65816<T> {
         *self.aa.b_mut() = self.op_readpc();
         self.child.last_cycle();
         self.op_writelong(
-            self.aa.d().wrapping_add(
-                match I {
-                    1 => self.regs.x,
-                    3 => self.regs.z,
-                    _ => unreachable!(),
-                }
-                .w() as u32,
-            ),
+            self.aa.d().wrapping_add(self.regs.r(I).w() as u32),
             self.regs.a.l(),
         );
     }
@@ -142,14 +69,7 @@ impl<T: R65816Trait> R65816<T> {
         self.op_writelong(
             self.aa
                 .d()
-                .wrapping_add(
-                    match I {
-                        1 => self.regs.x,
-                        3 => self.regs.z,
-                        _ => unreachable!(),
-                    }
-                    .w() as u32,
-                )
+                .wrapping_add(self.regs.r(I).w() as u32)
                 .wrapping_add(0),
             self.regs.a.l(),
         );
@@ -157,14 +77,7 @@ impl<T: R65816Trait> R65816<T> {
         self.op_writelong(
             self.aa
                 .d()
-                .wrapping_add(
-                    match I {
-                        1 => self.regs.x,
-                        3 => self.regs.z,
-                        _ => unreachable!(),
-                    }
-                    .w() as u32,
-                )
+                .wrapping_add(self.regs.r(I).w() as u32)
                 .wrapping_add(1),
             self.regs.a.h(),
         );
@@ -174,42 +87,14 @@ impl<T: R65816Trait> R65816<T> {
         self.dp = self.op_readpc();
         self.op_io_cond2();
         self.child.last_cycle();
-        self.op_writedp(
-            self.dp as u32,
-            match N {
-                1 => self.regs.x,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .l(),
-        );
+        self.op_writedp(self.dp as u32, self.regs.r(N).l());
     }
 
     pub fn op_write_dp_w<const N: usize>(&mut self) {
         self.dp = self.op_readpc();
         self.op_io_cond2();
-        self.op_writedp(
-            self.dp.wrapping_add(0) as u32,
-            match N {
-                0 => self.regs.a,
-                1 => self.regs.x,
-                2 => self.regs.y,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .l(),
-        );
+        self.op_writedp(self.dp.wrapping_add(0) as u32, self.regs.r(N).l());
         self.child.last_cycle();
-        self.op_writedp(
-            self.dp.wrapping_add(1) as u32,
-            match N {
-                0 => self.regs.a,
-                1 => self.regs.x,
-                2 => self.regs.y,
-                3 => self.regs.z,
-                _ => unreachable!(),
-            }
-            .h(),
-        );
+        self.op_writedp(self.dp.wrapping_add(1) as u32, self.regs.r(N).h());
     }
 }

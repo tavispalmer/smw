@@ -174,16 +174,7 @@ impl<T: R65816Trait> R65816<T> {
         self.op_io_cond2();
         self.child.op_io();
         self.child.last_cycle();
-        *self.rd.l_mut() = self.op_readdp(
-            (self.dp as u32).wrapping_add(
-                match N {
-                    1 => self.regs.x,
-                    2 => self.regs.y,
-                    _ => unreachable!(),
-                }
-                .w() as u32,
-            ),
-        );
+        *self.rd.l_mut() = self.op_readdp((self.dp as u32).wrapping_add(self.regs.r(N).w() as u32));
     }
 
     #[inline(always)]
@@ -193,27 +184,13 @@ impl<T: R65816Trait> R65816<T> {
         self.child.op_io();
         *self.rd.l_mut() = self.op_readdp(
             (self.dp as u32)
-                .wrapping_add(
-                    match N {
-                        1 => self.regs.x,
-                        2 => self.regs.y,
-                        _ => unreachable!(),
-                    }
-                    .w() as u32,
-                )
+                .wrapping_add(self.regs.r(N).w() as u32)
                 .wrapping_add(0),
         );
         self.child.last_cycle();
         *self.rd.h_mut() = self.op_readdp(
             (self.dp as u32)
-                .wrapping_add(
-                    match N {
-                        1 => self.regs.x,
-                        2 => self.regs.y,
-                        _ => unreachable!(),
-                    }
-                    .w() as u32,
-                )
+                .wrapping_add(self.regs.r(N).w() as u32)
                 .wrapping_add(1),
         );
     }

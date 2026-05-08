@@ -272,4 +272,17 @@ impl Regs {
             vector: 0,
         }
     }
+
+    #[inline]
+    pub fn r(&self, index: usize) -> &Reg16 {
+        match index {
+            0 => &self.a,
+            1 => &self.x,
+            2 => &self.y,
+            3 => &self.z,
+            4 => &self.s,
+            5 => &self.d,
+            _ => panic!("index out of bounds"),
+        }
+    }
 }
