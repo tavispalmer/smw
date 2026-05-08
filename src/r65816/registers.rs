@@ -1,7 +1,7 @@
 // code adapted from bsnes-mercury
 // https://github.com/libretro/bsnes-mercury
 
-use std::ops::BitAnd;
+use std::{mem, ops::BitAnd, slice};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Flag {
@@ -63,24 +63,44 @@ impl Reg16 {
         self.0
     }
     #[inline]
-    pub const fn set_w(&mut self, w: u16) {
-        self.0 = w
+    pub const fn w_mut(&mut self) -> &mut u16 {
+        &mut self.0
     }
     #[inline]
     pub const fn l(&self) -> u8 {
-        self.0 as u8
+        let data = unsafe { slice::from_raw_parts(&raw const self.0 as *const u8, 2) };
+        if cfg!(target_endian = "little") {
+            data[0]
+        } else {
+            data[1]
+        }
     }
     #[inline]
-    pub const fn set_l(&mut self, l: u8) {
-        self.0 = (self.0 & !0xff) | l as u16
+    pub const fn l_mut(&mut self) -> &mut u8 {
+        let data = unsafe { slice::from_raw_parts_mut(&raw mut self.0 as *mut u8, 2) };
+        if cfg!(target_endian = "little") {
+            &mut data[0]
+        } else {
+            &mut data[1]
+        }
     }
     #[inline]
     pub const fn h(&self) -> u8 {
-        (self.0 >> 8) as u8
+        let data = unsafe { slice::from_raw_parts(&raw const self.0 as *const u8, 2) };
+        if cfg!(target_endian = "little") {
+            data[1]
+        } else {
+            data[0]
+        }
     }
     #[inline]
-    pub const fn set_h(&mut self, h: u8) {
-        self.0 = (self.0 & !0xff00) | (h as u16) << 8
+    pub const fn h_mut(&mut self) -> &mut u8 {
+        let data = unsafe { slice::from_raw_parts_mut(&raw mut self.0 as *mut u8, 2) };
+        if cfg!(target_endian = "little") {
+            &mut data[1]
+        } else {
+            &mut data[0]
+        }
     }
     #[inline]
     pub const fn new() -> Self {
@@ -97,56 +117,116 @@ impl Reg24 {
         self.0
     }
     #[inline]
-    pub const fn set_d(&mut self, d: u32) {
-        self.0 = d
+    pub const fn d_mut(&mut self) -> &mut u32 {
+        &mut self.0
     }
     #[inline]
     pub const fn w(&self) -> u16 {
-        self.0 as u16
+        let data = unsafe { slice::from_raw_parts(&raw const self.0 as *const u16, 2) };
+        if cfg!(target_endian = "little") {
+            data[0]
+        } else {
+            data[1]
+        }
     }
     #[inline]
-    pub const fn set_w(&mut self, w: u16) {
-        self.0 = (self.0 & !0xffff) | w as u32
+    pub const fn w_mut(&mut self) -> &mut u16 {
+        let data = unsafe { slice::from_raw_parts_mut(&raw mut self.0 as *mut u16, 2) };
+        if cfg!(target_endian = "little") {
+            &mut data[0]
+        } else {
+            &mut data[1]
+        }
     }
     #[inline]
     pub const fn wh(&self) -> u16 {
-        (self.0 >> 16) as u16
+        let data = unsafe { slice::from_raw_parts(&raw const self.0 as *const u16, 2) };
+        if cfg!(target_endian = "little") {
+            data[1]
+        } else {
+            data[0]
+        }
     }
     #[inline]
-    pub const fn set_wh(&mut self, wh: u16) {
-        self.0 = (self.0 & !0xffff0000) | (wh as u32) << 16
+    pub const fn wh_mut(&mut self) -> &mut u16 {
+        let data = unsafe { slice::from_raw_parts_mut(&raw mut self.0 as *mut u16, 2) };
+        if cfg!(target_endian = "little") {
+            &mut data[1]
+        } else {
+            &mut data[0]
+        }
     }
     #[inline]
     pub const fn l(&self) -> u8 {
-        self.0 as u8
+        let data = unsafe { slice::from_raw_parts(&raw const self.0 as *const u8, 4) };
+        if cfg!(target_endian = "little") {
+            data[0]
+        } else {
+            data[3]
+        }
     }
     #[inline]
-    pub const fn set_l(&mut self, l: u8) {
-        self.0 = (self.0 & !0xff) | l as u32
+    pub const fn l_mut(&mut self) -> &mut u8 {
+        let data = unsafe { slice::from_raw_parts_mut(&raw mut self.0 as *mut u8, 4) };
+        if cfg!(target_endian = "little") {
+            &mut data[0]
+        } else {
+            &mut data[3]
+        }
     }
     #[inline]
     pub const fn h(&self) -> u8 {
-        (self.0 >> 8) as u8
+        let data = unsafe { slice::from_raw_parts(&raw const self.0 as *const u8, 4) };
+        if cfg!(target_endian = "little") {
+            data[1]
+        } else {
+            data[2]
+        }
     }
     #[inline]
-    pub const fn set_h(&mut self, h: u8) {
-        self.0 = (self.0 & !0xff00) | (h as u32) << 8
+    pub const fn h_mut(&mut self) -> &mut u8 {
+        let data = unsafe { slice::from_raw_parts_mut(&raw mut self.0 as *mut u8, 4) };
+        if cfg!(target_endian = "little") {
+            &mut data[1]
+        } else {
+            &mut data[2]
+        }
     }
     #[inline]
     pub const fn b(&self) -> u8 {
-        (self.0 >> 16) as u8
+        let data = unsafe { slice::from_raw_parts(&raw const self.0 as *const u8, 4) };
+        if cfg!(target_endian = "little") {
+            data[2]
+        } else {
+            data[1]
+        }
     }
     #[inline]
-    pub const fn set_b(&mut self, b: u8) {
-        self.0 = (self.0 & !0xff0000) | (b as u32) << 16
+    pub const fn b_mut(&mut self) -> &mut u8 {
+        let data = unsafe { slice::from_raw_parts_mut(&raw mut self.0 as *mut u8, 4) };
+        if cfg!(target_endian = "little") {
+            &mut data[2]
+        } else {
+            &mut data[1]
+        }
     }
     #[inline]
     pub const fn bh(&self) -> u8 {
-        (self.0 >> 24) as u8
+        let data = unsafe { slice::from_raw_parts(&raw const self.0 as *const u8, 4) };
+        if cfg!(target_endian = "little") {
+            data[3]
+        } else {
+            data[0]
+        }
     }
     #[inline]
-    pub const fn set_bh(&mut self, bh: u8) {
-        self.0 = (self.0 & !0xff000000) | (bh as u32) << 24
+    pub const fn bh_mut(&mut self) -> &mut u8 {
+        let data = unsafe { slice::from_raw_parts_mut(&raw mut self.0 as *mut u8, 4) };
+        if cfg!(target_endian = "little") {
+            &mut data[3]
+        } else {
+            &mut data[0]
+        }
     }
     #[inline]
     pub const fn new() -> Self {

@@ -83,18 +83,16 @@ impl<T: R65816Trait> R65816<T> {
         } else {
             self.regs.p.into()
         });
-        self.rd.set_l(
-            self.child
-                .op_read((self.regs.vector as u32).wrapping_add(0)),
-        );
-        self.regs.pc.set_b(0x00);
+        *self.rd.l_mut() = self
+            .child
+            .op_read((self.regs.vector as u32).wrapping_add(0));
+        *self.regs.pc.b_mut() = 0x00;
         self.regs.p.i = true;
         self.regs.p.d = false;
-        self.rd.set_h(
-            self.child
-                .op_read((self.regs.vector as u32).wrapping_add(1)),
-        );
-        self.regs.pc.set_w(self.rd.w());
+        *self.rd.h_mut() = self
+            .child
+            .op_read((self.regs.vector as u32).wrapping_add(1));
+        *self.regs.pc.w_mut() = self.rd.w();
     }
 
     pub fn new(child: T) -> Self {

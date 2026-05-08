@@ -35,7 +35,7 @@ impl<T: R65816Trait> R65816<T> {
         self.regs.p.n = (result & 0x80) != 0;
         self.regs.p.z = result as u8 == 0;
 
-        self.regs.a.set_l(result as u8);
+        *self.regs.a.l_mut() = result as u8;
     }
 
     #[inline(always)]
@@ -85,19 +85,19 @@ impl<T: R65816Trait> R65816<T> {
         self.regs.p.n = (result & 0x8000) != 0;
         self.regs.p.z = result as u16 == 0;
 
-        self.regs.a.set_w(result as u16);
+        *self.regs.a.w_mut() = result as u16;
     }
 
     #[inline(always)]
     pub fn op_and_b(&mut self) {
-        self.regs.a.set_l(self.regs.a.l() & self.rd.l());
+        *self.regs.a.l_mut() = self.regs.a.l() & self.rd.l();
         self.regs.p.n = (self.regs.a.l() & 0x80) != 0;
         self.regs.p.z = self.regs.a.l() == 0;
     }
 
     #[inline(always)]
     pub fn op_and_w(&mut self) {
-        self.regs.a.set_w(self.regs.a.w() & self.rd.w());
+        *self.regs.a.w_mut() = self.regs.a.w() & self.rd.w();
         self.regs.p.n = (self.regs.a.w() & 0x8000) != 0;
         self.regs.p.z = self.regs.a.w() == 0;
     }
@@ -166,70 +166,70 @@ impl<T: R65816Trait> R65816<T> {
 
     #[inline(always)]
     pub fn op_eor_b(&mut self) {
-        self.regs.a.set_l(self.regs.a.l() ^ self.rd.l());
+        *self.regs.a.l_mut() = self.regs.a.l() ^ self.rd.l();
         self.regs.p.n = (self.regs.a.l() & 0x80) != 0;
         self.regs.p.z = self.regs.a.l() == 0;
     }
 
     #[inline(always)]
     pub fn op_eor_w(&mut self) {
-        self.regs.a.set_w(self.regs.a.w() ^ self.rd.w());
+        *self.regs.a.w_mut() = self.regs.a.w() ^ self.rd.w();
         self.regs.p.n = (self.regs.a.w() & 0x8000) != 0;
         self.regs.p.z = self.regs.a.w() == 0;
     }
 
     #[inline(always)]
     pub fn op_lda_b(&mut self) {
-        self.regs.a.set_l(self.rd.l());
+        *self.regs.a.l_mut() = self.rd.l();
         self.regs.p.n = (self.regs.a.l() & 0x80) != 0;
         self.regs.p.z = self.regs.a.l() == 0;
     }
 
     #[inline(always)]
     pub fn op_lda_w(&mut self) {
-        self.regs.a.set_w(self.rd.w());
+        *self.regs.a.w_mut() = self.rd.w();
         self.regs.p.n = (self.regs.a.w() & 0x8000) != 0;
         self.regs.p.z = self.regs.a.w() == 0;
     }
 
     #[inline(always)]
     pub fn op_ldx_b(&mut self) {
-        self.regs.x.set_l(self.rd.l());
+        *self.regs.x.l_mut() = self.rd.l();
         self.regs.p.n = (self.regs.x.l() & 0x80) != 0;
         self.regs.p.z = self.regs.x.l() == 0;
     }
 
     #[inline(always)]
     pub fn op_ldx_w(&mut self) {
-        self.regs.x.set_w(self.rd.w());
+        *self.regs.x.w_mut() = self.rd.w();
         self.regs.p.n = (self.regs.x.w() & 0x8000) != 0;
         self.regs.p.z = self.regs.x.w() == 0;
     }
 
     #[inline(always)]
     pub fn op_ldy_b(&mut self) {
-        self.regs.y.set_l(self.rd.l());
+        *self.regs.y.l_mut() = self.rd.l();
         self.regs.p.n = (self.regs.y.l() & 0x80) != 0;
         self.regs.p.z = self.regs.y.l() == 0;
     }
 
     #[inline(always)]
     pub fn op_ldy_w(&mut self) {
-        self.regs.y.set_w(self.rd.w());
+        *self.regs.y.w_mut() = self.rd.w();
         self.regs.p.n = (self.regs.y.w() & 0x8000) != 0;
         self.regs.p.z = self.regs.y.w() == 0;
     }
 
     #[inline(always)]
     pub fn op_ora_b(&mut self) {
-        self.regs.a.set_l(self.regs.a.l() | self.rd.l());
+        *self.regs.a.l_mut() = self.regs.a.l() | self.rd.l();
         self.regs.p.n = (self.regs.a.l() & 0x80) != 0;
         self.regs.p.z = self.regs.a.l() == 0;
     }
 
     #[inline(always)]
     pub fn op_ora_w(&mut self) {
-        self.regs.a.set_w(self.regs.a.w() | self.rd.w());
+        *self.regs.a.w_mut() = self.regs.a.w() | self.rd.w();
         self.regs.p.n = (self.regs.a.w() & 0x8000) != 0;
         self.regs.p.z = self.regs.a.w() == 0;
     }
@@ -237,7 +237,7 @@ impl<T: R65816Trait> R65816<T> {
     #[inline(always)]
     pub fn op_sbc_b(&mut self) {
         let mut result;
-        self.rd.set_l(self.rd.l() ^ 0xff);
+        *self.rd.l_mut() = self.rd.l() ^ 0xff;
 
         if !self.regs.p.d {
             result = self.regs.a.l() as u16 + self.rd.l() as u16 + self.regs.p.c as u16;
@@ -266,13 +266,13 @@ impl<T: R65816Trait> R65816<T> {
         self.regs.p.n = (result & 0x80) != 0;
         self.regs.p.z = result as u8 == 0;
 
-        self.regs.a.set_l(result as u8);
+        *self.regs.a.l_mut() = result as u8;
     }
 
     #[inline(always)]
     pub fn op_sbc_w(&mut self) {
         let mut result;
-        self.rd.set_w(self.rd.w() ^ 0xffff);
+        *self.rd.w_mut() = self.rd.w() ^ 0xffff;
 
         if !self.regs.p.d {
             result = self.regs.a.w() as u32 + self.rd.w() as u32 + self.regs.p.c as u32;
@@ -317,33 +317,33 @@ impl<T: R65816Trait> R65816<T> {
         self.regs.p.n = (result & 0x8000) != 0;
         self.regs.p.z = result as u16 == 0;
 
-        self.regs.a.set_w(result as u16);
+        *self.regs.a.w_mut() = result as u16;
     }
 
     #[inline(always)]
     pub fn op_inc_b(&mut self) {
-        self.rd.set_l(self.rd.l().wrapping_add(1));
+        *self.rd.l_mut() = self.rd.l().wrapping_add(1);
         self.regs.p.n = (self.rd.l() & 0x80) != 0;
         self.regs.p.z = self.rd.l() == 0;
     }
 
     #[inline(always)]
     pub fn op_inc_w(&mut self) {
-        self.rd.set_w(self.rd.w().wrapping_add(1));
+        *self.rd.w_mut() = self.rd.w().wrapping_add(1);
         self.regs.p.n = (self.rd.w() & 0x8000) != 0;
         self.regs.p.z = self.rd.w() == 0;
     }
 
     #[inline(always)]
     pub fn op_dec_b(&mut self) {
-        self.rd.set_l(self.rd.l().wrapping_sub(1));
+        *self.rd.l_mut() = self.rd.l().wrapping_sub(1);
         self.regs.p.n = (self.rd.l() & 0x80) != 0;
         self.regs.p.z = self.rd.l() == 0;
     }
 
     #[inline(always)]
     pub fn op_dec_w(&mut self) {
-        self.rd.set_w(self.rd.w().wrapping_sub(1));
+        *self.rd.w_mut() = self.rd.w().wrapping_sub(1);
         self.regs.p.n = (self.rd.w() & 0x8000) != 0;
         self.regs.p.z = self.rd.w() == 0;
     }
@@ -351,7 +351,7 @@ impl<T: R65816Trait> R65816<T> {
     #[inline(always)]
     pub fn op_asl_b(&mut self) {
         self.regs.p.c = (self.rd.l() & 0x80) != 0;
-        self.rd.set_l(self.rd.l() << 1);
+        *self.rd.l_mut() = self.rd.l() << 1;
         self.regs.p.n = (self.rd.l() & 0x80) != 0;
         self.regs.p.z = self.rd.l() == 0;
     }
@@ -359,7 +359,7 @@ impl<T: R65816Trait> R65816<T> {
     #[inline(always)]
     pub fn op_asl_w(&mut self) {
         self.regs.p.c = (self.rd.w() & 0x8000) != 0;
-        self.rd.set_w(self.rd.w() << 1);
+        *self.rd.w_mut() = self.rd.w() << 1;
         self.regs.p.n = (self.rd.w() & 0x8000) != 0;
         self.regs.p.z = self.rd.w() == 0;
     }
@@ -367,7 +367,7 @@ impl<T: R65816Trait> R65816<T> {
     #[inline(always)]
     pub fn op_lsr_b(&mut self) {
         self.regs.p.c = (self.rd.l() & 1) != 0;
-        self.rd.set_l(self.rd.l() >> 1);
+        *self.rd.l_mut() = self.rd.l() >> 1;
         self.regs.p.n = (self.rd.l() & 0x80) != 0;
         self.regs.p.z = self.rd.l() == 0;
     }
@@ -375,7 +375,7 @@ impl<T: R65816Trait> R65816<T> {
     #[inline(always)]
     pub fn op_lsr_w(&mut self) {
         self.regs.p.c = (self.rd.w() & 1) != 0;
-        self.rd.set_w(self.rd.w() >> 1);
+        *self.rd.w_mut() = self.rd.w() >> 1;
         self.regs.p.n = (self.rd.w() & 0x8000) != 0;
         self.regs.p.z = self.rd.w() == 0;
     }
@@ -384,7 +384,7 @@ impl<T: R65816Trait> R65816<T> {
     pub fn op_rol_b(&mut self) {
         let carry = self.regs.p.c as u8;
         self.regs.p.c = (self.rd.l() & 0x80) != 0;
-        self.rd.set_l((self.rd.l() << 1) | carry);
+        *self.rd.l_mut() = (self.rd.l() << 1) | carry;
         self.regs.p.n = (self.rd.l() & 0x80) != 0;
         self.regs.p.z = self.rd.l() == 0;
     }
@@ -393,7 +393,7 @@ impl<T: R65816Trait> R65816<T> {
     pub fn op_rol_w(&mut self) {
         let carry = self.regs.p.c as u16;
         self.regs.p.c = (self.rd.w() & 0x8000) != 0;
-        self.rd.set_w((self.rd.w() << 1) | carry);
+        *self.rd.w_mut() = (self.rd.w() << 1) | carry;
         self.regs.p.n = (self.rd.w() & 0x8000) != 0;
         self.regs.p.z = self.rd.w() == 0;
     }
@@ -402,7 +402,7 @@ impl<T: R65816Trait> R65816<T> {
     pub fn op_ror_b(&mut self) {
         let carry = (self.regs.p.c as u8) << 7;
         self.regs.p.c = (self.rd.l() & 1) != 0;
-        self.rd.set_l(carry | (self.rd.l() >> 1));
+        *self.rd.l_mut() = carry | (self.rd.l() >> 1);
         self.regs.p.n = (self.rd.l() & 0x80) != 0;
         self.regs.p.z = self.rd.l() == 0;
     }
@@ -411,7 +411,7 @@ impl<T: R65816Trait> R65816<T> {
     pub fn op_ror_w(&mut self) {
         let carry = (self.regs.p.c as u16) << 15;
         self.regs.p.c = (self.rd.w() & 1) != 0;
-        self.rd.set_w(carry | (self.rd.w() >> 1));
+        *self.rd.w_mut() = carry | (self.rd.w() >> 1);
         self.regs.p.n = (self.rd.w() & 0x8000) != 0;
         self.regs.p.z = self.rd.w() == 0;
     }
@@ -419,24 +419,24 @@ impl<T: R65816Trait> R65816<T> {
     #[inline(always)]
     pub fn op_trb_b(&mut self) {
         self.regs.p.z = (self.rd.l() & self.regs.a.l()) == 0;
-        self.rd.set_l(self.rd.l() & !self.regs.a.l());
+        *self.rd.l_mut() = self.rd.l() & !self.regs.a.l();
     }
 
     #[inline(always)]
     pub fn op_trb_w(&mut self) {
         self.regs.p.z = (self.rd.w() & self.regs.a.w()) == 0;
-        self.rd.set_w(self.rd.w() & !self.regs.a.w());
+        *self.rd.w_mut() = self.rd.w() & !self.regs.a.w();
     }
 
     #[inline(always)]
     pub fn op_tsb_b(&mut self) {
         self.regs.p.z = (self.rd.l() & self.regs.a.l()) == 0;
-        self.rd.set_l(self.rd.l() | self.regs.a.l());
+        *self.rd.l_mut() = self.rd.l() | self.regs.a.l();
     }
 
     #[inline(always)]
     pub fn op_tsb_w(&mut self) {
         self.regs.p.z = (self.rd.w() & self.regs.a.w()) == 0;
-        self.rd.set_w(self.rd.w() | self.regs.a.w());
+        *self.rd.w_mut() = self.rd.w() | self.regs.a.w();
     }
 }

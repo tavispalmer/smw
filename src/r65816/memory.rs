@@ -9,23 +9,23 @@ impl<T: R65816Trait> R65816<T> {
         let r = self
             .child
             .op_read(((self.regs.pc.b() as u32) << 16).wrapping_add(self.regs.pc.w() as u32));
-        self.regs.pc.set_w(self.regs.pc.w().wrapping_add(1));
+        *self.regs.pc.w_mut() = self.regs.pc.w().wrapping_add(1);
         r
     }
 
     #[inline(always)]
     pub fn op_readstack(&mut self) -> u8 {
         if self.regs.e {
-            self.regs.s.set_l(self.regs.s.l().wrapping_add(1));
+            *self.regs.s.l_mut() = self.regs.s.l().wrapping_add(1);
         } else {
-            self.regs.s.set_w(self.regs.s.w().wrapping_add(1));
+            *self.regs.s.w_mut() = self.regs.s.w().wrapping_add(1);
         }
         self.child.op_read(self.regs.s.w() as u32)
     }
 
     #[inline(always)]
     pub fn op_readstackn(&mut self) -> u8 {
-        self.regs.s.set_w(self.regs.s.w().wrapping_add(1));
+        *self.regs.s.w_mut() = self.regs.s.w().wrapping_add(1);
         self.child.op_read(self.regs.s.w() as u32)
     }
 
@@ -74,16 +74,16 @@ impl<T: R65816Trait> R65816<T> {
     pub fn op_writestack(&mut self, data: u8) {
         self.child.op_write(self.regs.s.w() as u32, data);
         if self.regs.e {
-            self.regs.s.set_l(self.regs.s.l().wrapping_sub(1))
+            *self.regs.s.l_mut() = self.regs.s.l().wrapping_sub(1)
         } else {
-            self.regs.s.set_w(self.regs.s.w().wrapping_sub(1))
+            *self.regs.s.w_mut() = self.regs.s.w().wrapping_sub(1)
         }
     }
 
     #[inline(always)]
     pub fn op_writestackn(&mut self, data: u8) {
         self.child.op_write(self.regs.s.w() as u32, data);
-        self.regs.s.set_w(self.regs.s.w().wrapping_sub(1))
+        *self.regs.s.w_mut() = self.regs.s.w().wrapping_sub(1)
     }
 
     #[inline(always)]
