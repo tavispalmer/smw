@@ -618,6 +618,12 @@ impl<T: R65816Trait> R65816<T> {
         );
         Self::op_m(
             &mut op_table,
+            0x64,
+            Self::op_write_dp_b::<Z>,
+            Self::op_write_dp_w::<Z>,
+        );
+        Self::op_m(
+            &mut op_table,
             0x65,
             |this| {
                 this.op_read_dp_b();
@@ -771,6 +777,24 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_read_longx_w();
                 this.op_adc_w();
             },
+        );
+        Self::op_x(
+            &mut op_table,
+            0x84,
+            Self::op_write_dp_b::<Y>,
+            Self::op_write_dp_w::<Y>,
+        );
+        Self::op_m(
+            &mut op_table,
+            0x85,
+            Self::op_write_dp_b::<A>,
+            Self::op_write_dp_w::<A>,
+        );
+        Self::op_x(
+            &mut op_table,
+            0x86,
+            Self::op_write_dp_b::<X>,
+            Self::op_write_dp_w::<X>,
         );
         Self::op_x(
             &mut op_table,

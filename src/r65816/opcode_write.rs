@@ -169,4 +169,47 @@ impl<T: R65816Trait> R65816<T> {
             self.regs.a.h(),
         );
     }
+
+    pub fn op_write_dp_b<const N: usize>(&mut self) {
+        self.dp = self.op_readpc();
+        self.op_io_cond2();
+        self.child.last_cycle();
+        self.op_writedp(
+            self.dp as u32,
+            match N {
+                1 => self.regs.x,
+                3 => self.regs.z,
+                _ => unreachable!(),
+            }
+            .l(),
+        );
+    }
+
+    pub fn op_write_dp_w<const N: usize>(&mut self) {
+        self.dp = self.op_readpc();
+        self.op_io_cond2();
+        self.op_writedp(
+            self.dp.wrapping_add(0) as u32,
+            match N {
+                0 => self.regs.a,
+                1 => self.regs.x,
+                2 => self.regs.y,
+                3 => self.regs.z,
+                _ => unreachable!(),
+            }
+            .l(),
+        );
+        self.child.last_cycle();
+        self.op_writedp(
+            self.dp.wrapping_add(1) as u32,
+            match N {
+                0 => self.regs.a,
+                1 => self.regs.x,
+                2 => self.regs.y,
+                3 => self.regs.z,
+                _ => unreachable!(),
+            }
+            .h(),
+        );
+    }
 }
