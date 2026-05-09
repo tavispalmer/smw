@@ -109,4 +109,21 @@ impl<T: R65816Trait> R65816<T> {
         }
         self.child.op_io();
     }
+
+    pub fn op_xce(&mut self) {
+        self.child.last_cycle();
+        self.op_io_irq();
+        let carry = self.regs.p.c;
+        self.regs.p.c = self.regs.e;
+        self.regs.e = carry;
+        if self.regs.e {
+            self.regs.p |= 0x30;
+            *self.regs.s.h_mut() = 0x01;
+        }
+        if self.regs.p.x {
+            *self.regs.x.h_mut() = 0x00;
+            *self.regs.y.h_mut() = 0x00;
+        }
+        self.update_table();
+    }
 }

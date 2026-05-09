@@ -1418,6 +1418,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_sbc_w();
             },
         );
+        Self::op_a(&mut op_table, 0xfb, Self::op_xce);
         Self::op_m(
             &mut op_table,
             0xfd,
@@ -1445,5 +1446,28 @@ impl<T: R65816Trait> R65816<T> {
 
         // assume_init
         unsafe { mem::transmute(op_table) }
+    }
+
+    #[inline]
+    pub fn opcode_table(&self) -> &[fn(&mut Self)] {
+        &self.op_table[self.opcode_table_offset..self.opcode_table_offset + 256]
+    }
+
+    pub fn update_table(&mut self) {
+        if self.regs.e {
+            self.opcode_table_offset = Self::table_EM;
+        } else if self.regs.p.m {
+            if self.regs.p.x {
+                self.opcode_table_offset = Self::table_MX;
+            } else {
+                self.opcode_table_offset = Self::table_Mx;
+            }
+        } else {
+            if self.regs.p.x {
+                self.opcode_table_offset = Self::table_mX;
+            } else {
+                self.opcode_table_offset = Self::table_mx;
+            }
+        }
     }
 }

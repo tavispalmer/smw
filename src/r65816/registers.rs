@@ -1,7 +1,11 @@
 // code adapted from bsnes-mercury
 // https://github.com/libretro/bsnes-mercury
 
-use std::{mem, ops::BitAnd, slice};
+use std::{
+    mem,
+    ops::{BitAnd, BitOr, BitOrAssign},
+    slice,
+};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Flag {
@@ -29,6 +33,18 @@ impl Flag {
             c: false,
         }
     }
+
+    #[inline]
+    pub const fn assign(&mut self, rhs: u8) {
+        self.n = (rhs & 0x80) != 0;
+        self.v = (rhs & 0x40) != 0;
+        self.m = (rhs & 0x20) != 0;
+        self.x = (rhs & 0x10) != 0;
+        self.d = (rhs & 0x08) != 0;
+        self.i = (rhs & 0x04) != 0;
+        self.z = (rhs & 0x02) != 0;
+        self.c = (rhs & 0x01) != 0;
+    }
 }
 
 impl From<Flag> for u8 {
@@ -51,6 +67,13 @@ impl BitAnd<u8> for Flag {
     #[inline]
     fn bitand(self, rhs: u8) -> u8 {
         BitAnd::bitand(<Self as Into<u8>>::into(self), rhs)
+    }
+}
+
+impl BitOrAssign<u8> for Flag {
+    #[inline]
+    fn bitor_assign(&mut self, rhs: u8) {
+        self.assign(<Self as Into<u8>>::into(*self) | rhs)
     }
 }
 

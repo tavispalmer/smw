@@ -17,6 +17,7 @@ pub struct R65816<T: R65816Trait> {
     rd: Reg24,
     sp: u8,
     dp: u8,
+    opcode_table_offset: usize,
     op_table: [fn(&mut Self); 5 * 256],
     child: T,
 }
@@ -103,6 +104,7 @@ impl<T: R65816Trait> R65816<T> {
             rd: Reg24::new(),
             sp: 0,
             dp: 0,
+            opcode_table_offset: 0,
             op_table: Self::initialize_opcode_table(),
             child,
         }
