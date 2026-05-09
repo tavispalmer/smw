@@ -1,3 +1,6 @@
+// code adapted from bsnes-mercury
+// https://github.com/libretro/bsnes-mercury
+
 use crate::r65816::{R65816, R65816Trait};
 
 impl<T: R65816Trait> R65816<T> {
