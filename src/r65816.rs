@@ -5,6 +5,7 @@ use crate::r65816::registers::{Reg24, Regs};
 
 mod algorithms;
 mod memory;
+mod opcode_misc;
 mod opcode_read;
 mod opcode_write;
 mod registers;

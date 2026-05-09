@@ -18,6 +18,15 @@ impl<T: R65816Trait> R65816<T> {
     const table_mx: usize = 1024;
 
     #[inline(always)]
+    fn op_a(op_table: &mut [MaybeUninit<fn(&mut Self)>; 5 * 256], id: usize, fn_: fn(&mut Self)) {
+        op_table[Self::table_EM + id] = MaybeUninit::new(fn_);
+        op_table[Self::table_MX + id] = MaybeUninit::new(fn_);
+        op_table[Self::table_Mx + id] = MaybeUninit::new(fn_);
+        op_table[Self::table_mX + id] = MaybeUninit::new(fn_);
+        op_table[Self::table_mx + id] = MaybeUninit::new(fn_);
+    }
+
+    #[inline(always)]
     fn op_m(
         op_table: &mut [MaybeUninit<fn(&mut Self)>; 5 * 256],
         id: usize,
@@ -424,6 +433,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_eor_w();
             },
         );
+        Self::op_a(&mut op_table, 0x42, Self::op_wdm);
         Self::op_m(
             &mut op_table,
             0x43,
@@ -435,6 +445,12 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_read_sr_w();
                 this.op_eor_w();
             },
+        );
+        Self::op_x(
+            &mut op_table,
+            0x44,
+            Self::op_move_b::<-1>,
+            Self::op_move_w::<-1>,
         );
         Self::op_m(
             &mut op_table,
@@ -531,6 +547,12 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_read_isry_w();
                 this.op_eor_w();
             },
+        );
+        Self::op_x(
+            &mut op_table,
+            0x54,
+            Self::op_move_b::<1>,
+            Self::op_move_w::<1>,
         );
         Self::op_m(
             &mut op_table,
@@ -1270,6 +1292,8 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_sbc_w();
             },
         );
+        Self::op_a(&mut op_table, 0xea, Self::op_nop);
+        Self::op_a(&mut op_table, 0xeb, Self::op_xba);
         Self::op_m(
             &mut op_table,
             0xed,
