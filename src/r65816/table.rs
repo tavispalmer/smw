@@ -73,6 +73,8 @@ impl<T: R65816Trait> R65816<T> {
         const X: usize = 1;
         const Y: usize = 2;
         const Z: usize = 3;
+        const S: usize = 4;
+        const D: usize = 5;
 
         let mut op_table = [MaybeUninit::uninit(); 5 * 256];
         Self::op_e(
@@ -425,6 +427,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_and_w();
             },
         );
+        Self::op_a(&mut op_table, 0x3b, Self::op_transfer_w::<S, A>);
         Self::op_m(
             &mut op_table,
             0x3d,
@@ -619,6 +622,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_eor_w();
             },
         );
+        Self::op_a(&mut op_table, 0x5b, Self::op_transfer_w::<A, D>);
         Self::op_m(
             &mut op_table,
             0x5d,
@@ -806,6 +810,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_adc_w();
             },
         );
+        Self::op_a(&mut op_table, 0x7b, Self::op_transfer_w::<D, A>);
         Self::op_m(
             &mut op_table,
             0x7d,
@@ -848,6 +853,12 @@ impl<T: R65816Trait> R65816<T> {
             Self::op_write_dp_b::<X>,
             Self::op_write_dp_w::<X>,
         );
+        Self::op_m(
+            &mut op_table,
+            0x8a,
+            Self::op_transfer_b::<X, A>,
+            Self::op_transfer_w::<X, A>,
+        );
         Self::op_x(
             &mut op_table,
             0x8c,
@@ -874,9 +885,21 @@ impl<T: R65816Trait> R65816<T> {
         );
         Self::op_m(
             &mut op_table,
+            0x98,
+            Self::op_transfer_b::<Y, A>,
+            Self::op_transfer_w::<Y, A>,
+        );
+        Self::op_m(
+            &mut op_table,
             0x99,
             Self::op_write_addrr_b::<A, Y>,
             Self::op_write_addrr_w::<A, Y>,
+        );
+        Self::op_x(
+            &mut op_table,
+            0x9b,
+            Self::op_transfer_b::<X, Y>,
+            Self::op_transfer_w::<X, Y>,
         );
         Self::op_m(
             &mut op_table,
@@ -950,6 +973,12 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_lda_w();
             },
         );
+        Self::op_x(
+            &mut op_table,
+            0xa8,
+            Self::op_transfer_b::<A, Y>,
+            Self::op_transfer_w::<A, Y>,
+        );
         Self::op_m(
             &mut op_table,
             0xa9,
@@ -961,6 +990,12 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_read_const_w();
                 this.op_lda_w();
             },
+        );
+        Self::op_x(
+            &mut op_table,
+            0xaa,
+            Self::op_transfer_b::<A, X>,
+            Self::op_transfer_w::<A, X>,
         );
         Self::op_m(
             &mut op_table,
@@ -1058,6 +1093,12 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_read_addry_w();
                 this.op_lda_w();
             },
+        );
+        Self::op_x(
+            &mut op_table,
+            0xbb,
+            Self::op_transfer_b::<Y, X>,
+            Self::op_transfer_w::<Y, X>,
         );
         Self::op_m(
             &mut op_table,

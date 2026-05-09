@@ -165,4 +165,20 @@ impl<T: R65816Trait> R65816<T> {
         }
         self.update_table();
     }
+
+    pub fn op_transfer_b<const FROM: usize, const TO: usize>(&mut self) {
+        self.child.last_cycle();
+        self.op_io_irq();
+        *self.regs.r_mut(TO).l_mut() = self.regs.r(FROM).l();
+        self.regs.p.n = (self.regs.r(TO).l() & 0x80) != 0;
+        self.regs.p.z = self.regs.r(TO).l() == 0;
+    }
+
+    pub fn op_transfer_w<const FROM: usize, const TO: usize>(&mut self) {
+        self.child.last_cycle();
+        self.op_io_irq();
+        *self.regs.r_mut(TO).w_mut() = self.regs.r(FROM).w();
+        self.regs.p.n = (self.regs.r(TO).w() & 0x8000) != 0;
+        self.regs.p.z = self.regs.r(TO).w() == 0;
+    }
 }

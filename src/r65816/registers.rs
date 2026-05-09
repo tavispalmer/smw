@@ -317,4 +317,17 @@ impl Regs {
             _ => panic!("index out of bounds"),
         }
     }
+
+    #[inline]
+    pub fn r_mut(&mut self, index: usize) -> &mut Reg16 {
+        match index {
+            0 => &mut self.a,
+            1 => &mut self.x,
+            2 => &mut self.y,
+            3 => &mut self.z,
+            4 => &mut self.s,
+            5 => &mut self.d,
+            _ => panic!("index out of bounds"),
+        }
+    }
 }
