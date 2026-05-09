@@ -231,6 +231,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_ora_w();
             },
         );
+        Self::op_a(&mut op_table, 0x18, Self::op_flag::<0x01, 0x00>);
         Self::op_m(
             &mut op_table,
             0x19,
@@ -411,6 +412,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_and_w();
             },
         );
+        Self::op_a(&mut op_table, 0x38, Self::op_flag::<0x01, 0x01>);
         Self::op_m(
             &mut op_table,
             0x39,
@@ -604,6 +606,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_eor_w();
             },
         );
+        Self::op_a(&mut op_table, 0x58, Self::op_flag::<0x04, 0x00>);
         Self::op_m(
             &mut op_table,
             0x59,
@@ -790,6 +793,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_adc_w();
             },
         );
+        Self::op_a(&mut op_table, 0x78, Self::op_flag::<0x04, 0x04>);
         Self::op_m(
             &mut op_table,
             0x79,
@@ -1042,6 +1046,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_lda_w();
             },
         );
+        Self::op_a(&mut op_table, 0xb8, Self::op_flag::<0x40, 0x00>);
         Self::op_m(
             &mut op_table,
             0xb9,
@@ -1223,6 +1228,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_cmp_w();
             },
         );
+        Self::op_a(&mut op_table, 0xd8, Self::op_flag::<0x08, 0x00>);
         Self::op_m(
             &mut op_table,
             0xd9,
@@ -1406,6 +1412,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_sbc_w();
             },
         );
+        Self::op_a(&mut op_table, 0xf8, Self::op_flag::<0x08, 0x08>);
         Self::op_m(
             &mut op_table,
             0xf9,

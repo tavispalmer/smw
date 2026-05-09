@@ -126,4 +126,10 @@ impl<T: R65816Trait> R65816<T> {
         }
         self.update_table();
     }
+
+    pub fn op_flag<const MASK: u8, const VALUE: u8>(&mut self) {
+        self.child.last_cycle();
+        self.op_io_irq();
+        self.regs.p.assign((self.regs.p & !MASK) | VALUE);
+    }
 }
