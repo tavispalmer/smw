@@ -100,4 +100,13 @@ impl<T: R65816Trait> R65816<T> {
             self.child.op_io();
         }
     }
+
+    pub fn op_wai(&mut self) {
+        self.regs.wai = true;
+        while self.regs.wai {
+            self.child.last_cycle();
+            self.child.op_io();
+        }
+        self.child.op_io();
+    }
 }
