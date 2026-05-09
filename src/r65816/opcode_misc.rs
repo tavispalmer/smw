@@ -90,4 +90,14 @@ impl<T: R65816Trait> R65816<T> {
         *self.rd.h_mut() = self.op_readlong(VECTOR_N.wrapping_add(1));
         *self.regs.pc.w_mut() = self.rd.w();
     }
+
+    pub fn op_stp(&mut self) {
+        while {
+            self.regs.wai = true;
+            self.regs.wai
+        } {
+            self.child.last_cycle();
+            self.child.op_io();
+        }
+    }
 }

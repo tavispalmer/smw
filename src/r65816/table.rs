@@ -1234,6 +1234,7 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_cmp_w();
             },
         );
+        Self::op_a(&mut op_table, 0xdb, Self::op_stp);
         Self::op_m(
             &mut op_table,
             0xdd,
