@@ -150,11 +150,11 @@ impl<T: R65816Trait> R65816<T> {
         self.update_table();
     }
 
-    pub fn op_pflag_n<const mode: bool>(&mut self) {
+    pub fn op_pflag_n<const MODE: bool>(&mut self) {
         *self.rd.l_mut() = self.op_readpc();
         self.child.last_cycle();
         self.child.op_io();
-        self.regs.p.assign(if mode {
+        self.regs.p.assign(if MODE {
             self.regs.p | self.rd.l()
         } else {
             self.regs.p & !self.rd.l()
