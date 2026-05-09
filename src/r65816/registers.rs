@@ -70,6 +70,15 @@ impl BitAnd<u8> for Flag {
     }
 }
 
+impl BitOr<u8> for Flag {
+    type Output = u8;
+
+    #[inline]
+    fn bitor(self, rhs: u8) -> u8 {
+        BitOr::bitor(<Self as Into<u8>>::into(self), rhs)
+    }
+}
+
 impl BitOrAssign<u8> for Flag {
     #[inline]
     fn bitor_assign(&mut self, rhs: u8) {

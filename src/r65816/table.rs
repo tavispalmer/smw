@@ -1095,6 +1095,12 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_cmp_w();
             },
         );
+        Self::op_e(
+            &mut op_table,
+            0xc2,
+            Self::op_pflag_e::<false>,
+            Self::op_pflag_n::<false>,
+        );
         Self::op_m(
             &mut op_table,
             0xc3,
@@ -1277,6 +1283,12 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_read_idpx_w();
                 this.op_sbc_w();
             },
+        );
+        Self::op_e(
+            &mut op_table,
+            0xe2,
+            Self::op_pflag_e::<true>,
+            Self::op_pflag_n::<true>,
         );
         Self::op_m(
             &mut op_table,
