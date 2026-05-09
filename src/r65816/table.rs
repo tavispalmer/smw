@@ -27,6 +27,20 @@ impl<T: R65816Trait> R65816<T> {
     }
 
     #[inline(always)]
+    fn op_e(
+        op_table: &mut [MaybeUninit<fn(&mut Self)>; 5 * 256],
+        id: usize,
+        fn_e: fn(&mut Self),
+        fn_n: fn(&mut Self),
+    ) {
+        op_table[Self::table_EM + id] = MaybeUninit::new(fn_e);
+        op_table[Self::table_MX + id] = MaybeUninit::new(fn_n);
+        op_table[Self::table_Mx + id] = MaybeUninit::new(fn_n);
+        op_table[Self::table_mX + id] = MaybeUninit::new(fn_n);
+        op_table[Self::table_mx + id] = MaybeUninit::new(fn_n);
+    }
+
+    #[inline(always)]
     fn op_m(
         op_table: &mut [MaybeUninit<fn(&mut Self)>; 5 * 256],
         id: usize,
@@ -61,6 +75,12 @@ impl<T: R65816Trait> R65816<T> {
         const Z: usize = 3;
 
         let mut op_table = [MaybeUninit::uninit(); 5 * 256];
+        Self::op_e(
+            &mut op_table,
+            0x00,
+            Self::op_interrupt_e::<0xfffe, 0xffe6>,
+            Self::op_interrupt_n::<0xfffe, 0xffe6>,
+        );
         Self::op_m(
             &mut op_table,
             0x01,
@@ -72,6 +92,12 @@ impl<T: R65816Trait> R65816<T> {
                 this.op_read_idpx_w();
                 this.op_ora_w();
             },
+        );
+        Self::op_e(
+            &mut op_table,
+            0x02,
+            Self::op_interrupt_e::<0xfff4, 0xffe4>,
+            Self::op_interrupt_n::<0xfff4, 0xffe4>,
         );
         Self::op_m(
             &mut op_table,

@@ -61,4 +61,33 @@ impl<T: R65816Trait> R65816<T> {
         }
         *self.regs.a.w_mut() = self.regs.a.w().wrapping_sub(1);
     }
+
+    pub fn op_interrupt_e<const VECTOR_E: u32, const VECTOR_N: usize>(&mut self) {
+        self.op_readpc();
+        self.op_writestack(self.regs.pc.h());
+        self.op_writestack(self.regs.pc.l());
+        self.op_writestack(self.regs.p.into());
+        *self.rd.l_mut() = self.op_readlong(VECTOR_E.wrapping_add(0));
+        *self.regs.pc.b_mut() = 0;
+        self.regs.p.i = true;
+        self.regs.p.d = false;
+        self.child.last_cycle();
+        *self.rd.h_mut() = self.op_readlong(VECTOR_E.wrapping_add(1));
+        *self.regs.pc.w_mut() = self.rd.w();
+    }
+
+    pub fn op_interrupt_n<const VECTOR_E: u32, const VECTOR_N: u32>(&mut self) {
+        self.op_readpc();
+        self.op_writestack(self.regs.pc.b());
+        self.op_writestack(self.regs.pc.h());
+        self.op_writestack(self.regs.pc.l());
+        self.op_writestack(self.regs.p.into());
+        *self.rd.l_mut() = self.op_readlong(VECTOR_N.wrapping_add(0));
+        *self.regs.pc.b_mut() = 0x00;
+        self.regs.p.i = true;
+        self.regs.p.d = false;
+        self.child.last_cycle();
+        *self.rd.h_mut() = self.op_readlong(VECTOR_N.wrapping_add(1));
+        *self.regs.pc.w_mut() = self.rd.w();
+    }
 }
