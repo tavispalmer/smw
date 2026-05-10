@@ -6,39 +6,8 @@ use std::{
 };
 
 use sdl3_sys::{
-    audio::{
-        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_S16, SDL_AudioSpec, SDL_AudioStream,
-        SDL_GetAudioStreamQueued, SDL_OpenAudioDeviceStream, SDL_PutAudioStreamData,
-        SDL_ResumeAudioStreamDevice,
-    },
-    error::SDL_GetError,
-    events::{
-        SDL_EVENT_GAMEPAD_ADDED, SDL_EVENT_GAMEPAD_REMOVED, SDL_EVENT_QUIT, SDL_Event,
-        SDL_EventType,
-    },
-    gamepad::{
-        SDL_CloseGamepad, SDL_GAMEPAD_BUTTON_BACK, SDL_GAMEPAD_BUTTON_DPAD_DOWN,
-        SDL_GAMEPAD_BUTTON_DPAD_LEFT, SDL_GAMEPAD_BUTTON_DPAD_RIGHT, SDL_GAMEPAD_BUTTON_DPAD_UP,
-        SDL_GAMEPAD_BUTTON_EAST, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, SDL_GAMEPAD_BUTTON_NORTH,
-        SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, SDL_GAMEPAD_BUTTON_SOUTH, SDL_GAMEPAD_BUTTON_START,
-        SDL_GAMEPAD_BUTTON_WEST, SDL_Gamepad, SDL_GetGamepadButton, SDL_GetGamepadID,
-        SDL_OpenGamepad,
-    },
-    init::{
-        SDL_APP_CONTINUE, SDL_APP_FAILURE, SDL_APP_SUCCESS, SDL_AppResult, SDL_INIT_AUDIO,
-        SDL_INIT_GAMEPAD, SDL_INIT_VIDEO, SDL_Init, SDL_SetAppMetadata,
-    },
-    log::SDL_Log,
-    main::{SDL_EnterAppMainCallbacks, SDL_RunApp},
-    pixels::SDL_PIXELFORMAT_XRGB8888,
-    surface::{
-        SDL_BlitSurfaceScaled, SDL_CreateSurface, SDL_LockSurface, SDL_MUSTLOCK,
-        SDL_SCALEMODE_NEAREST, SDL_Surface, SDL_UnlockSurface,
-    },
-    video::{
-        SDL_CreateWindow, SDL_DestroyWindow, SDL_GetWindowSurface, SDL_UpdateWindowSurface,
-        SDL_Window, SDL_WindowFlags,
-    },
+    audio::*, error::*, events::*, gamepad::*, init::*, log::*, main::*, pixels::*, surface::*,
+    video::*,
 };
 use smw::{Callbacks, Smw};
 
@@ -64,7 +33,7 @@ impl Callbacks for AppState {
                         .pixels
                         .cast::<u32>()
                         .add(y * surface.pitch as usize / size_of::<u32>() + x) =
-                        data[y * pitch / size_of::<u32>() + x - 46] | 0xff000000;
+                        data[y * pitch / size_of::<u32>() + x - 46];
                 }
             }
             if SDL_MUSTLOCK(surface) {
