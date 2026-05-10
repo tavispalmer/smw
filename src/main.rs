@@ -1,11 +1,16 @@
 use std::{
-    ffi::{CStr, c_char, c_int, c_void},
-    mem::MaybeUninit,
+    ffi::{CStr, c_char, c_int, c_uint, c_void},
+    fs,
     process::ExitCode,
     ptr,
 };
 
 use sdl3_sys::{
+    audio::{
+        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_S16, SDL_AudioSpec, SDL_AudioStream,
+        SDL_GetAudioStreamQueued, SDL_OpenAudioDeviceStream, SDL_PutAudioStreamData,
+        SDL_ResumeAudioStreamDevice,
+    },
     error::SDL_GetError,
     events::{
         SDL_EVENT_GAMEPAD_ADDED, SDL_EVENT_GAMEPAD_BUTTON_DOWN, SDL_EVENT_GAMEPAD_BUTTON_UP,
@@ -14,24 +19,23 @@ use sdl3_sys::{
     gamepad::{
         SDL_CloseGamepad, SDL_GAMEPAD_BUTTON_BACK, SDL_GAMEPAD_BUTTON_DPAD_DOWN,
         SDL_GAMEPAD_BUTTON_DPAD_LEFT, SDL_GAMEPAD_BUTTON_DPAD_RIGHT, SDL_GAMEPAD_BUTTON_DPAD_UP,
-        SDL_GAMEPAD_BUTTON_EAST, SDL_GAMEPAD_BUTTON_GUIDE, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
-        SDL_GAMEPAD_BUTTON_NORTH, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, SDL_GAMEPAD_BUTTON_SOUTH,
-        SDL_GAMEPAD_BUTTON_START, SDL_GAMEPAD_BUTTON_WEST, SDL_Gamepad, SDL_GamepadButton,
-        SDL_GetGamepadID, SDL_OpenGamepad,
+        SDL_GAMEPAD_BUTTON_EAST, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, SDL_GAMEPAD_BUTTON_NORTH,
+        SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, SDL_GAMEPAD_BUTTON_SOUTH, SDL_GAMEPAD_BUTTON_START,
+        SDL_GAMEPAD_BUTTON_WEST, SDL_Gamepad, SDL_GamepadButton, SDL_GetGamepadID, SDL_OpenGamepad,
     },
     init::{
-        SDL_APP_CONTINUE, SDL_APP_FAILURE, SDL_APP_SUCCESS, SDL_AppResult, SDL_INIT_GAMEPAD,
-        SDL_INIT_VIDEO, SDL_Init, SDL_SetAppMetadata,
+        SDL_APP_CONTINUE, SDL_APP_FAILURE, SDL_APP_SUCCESS, SDL_AppResult, SDL_INIT_AUDIO,
+        SDL_INIT_GAMEPAD, SDL_INIT_VIDEO, SDL_Init, SDL_SetAppMetadata,
     },
     log::SDL_Log,
     main::{SDL_EnterAppMainCallbacks, SDL_RunApp},
-    render::{
-        SDL_CreateWindowAndRenderer, SDL_DestroyRenderer, SDL_LOGICAL_PRESENTATION_LETTERBOX,
-        SDL_Renderer, SDL_SetRenderLogicalPresentation,
+    surface::{SDL_LockSurface, SDL_MUSTLOCK, SDL_UnlockSurface},
+    video::{
+        SDL_CreateWindow, SDL_DestroyWindow, SDL_GetWindowSurface, SDL_UpdateWindowSurface,
+        SDL_Window, SDL_WindowFlags,
     },
-    video::{SDL_DestroyWindow, SDL_Window, SDL_WindowFlags},
 };
-use smw::{Bind, Smw};
+use smw::{Bind, SfcCallbacks, Smw, sfc_init, sfc_iter, sfc_quit};
 
 struct Callbacks {}
 
@@ -39,7 +43,7 @@ impl Bind for Callbacks {}
 
 struct AppState {
     pub window: *mut SDL_Window,
-    pub renderer: *mut SDL_Renderer,
+    pub stream: *mut SDL_AudioStream,
     pub gamepad: *mut SDL_Gamepad,
     pub gamepad_state: u16,
     pub smw: Smw,
@@ -59,36 +63,107 @@ extern "C" fn appinit(
             return SDL_APP_FAILURE;
         }
 
-        if !SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD) {
+        if !SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD) {
             SDL_Log(c"Couldn't initialize SDL: %s".as_ptr(), SDL_GetError());
             return SDL_APP_FAILURE;
         }
 
-        let mut window = MaybeUninit::uninit();
-        let mut renderer = MaybeUninit::uninit();
-        if !SDL_CreateWindowAndRenderer(
-            c"smw".as_ptr(),
-            800,
-            600,
-            SDL_WindowFlags(0),
-            window.as_mut_ptr(),
-            renderer.as_mut_ptr(),
-        ) {
+        let window = SDL_CreateWindow(c"smw".as_ptr(), 256, 240, SDL_WindowFlags(0));
+        if window.is_null() {
             return SDL_APP_FAILURE;
         }
-        let window = window.assume_init();
-        let renderer = renderer.assume_init();
 
-        SDL_SetRenderLogicalPresentation(renderer, 800, 600, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+        let spec = SDL_AudioSpec {
+            format: SDL_AUDIO_S16,
+            channels: 2,
+            freq: 32040.5 as i32,
+        };
+
+        let stream = SDL_OpenAudioDeviceStream(
+            SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+            &spec,
+            None,
+            ptr::null_mut(),
+        );
+        if stream.is_null() {
+            SDL_Log(c"Couldn't create audio stream: %s".as_ptr(), SDL_GetError());
+            return SDL_APP_FAILURE;
+        }
+
+        SDL_ResumeAudioStreamDevice(stream);
+
+        // SDL_SetRenderLogicalPresentation(renderer, 800, 600, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+
+        // setup callbacks
+        const CLBK: SfcCallbacks = SfcCallbacks {
+            video_refresh: Some({
+                extern "C" fn video_refresh(
+                    user: *mut c_void,
+                    pixels: *const c_void,
+                    width: c_uint,
+                    height: c_uint,
+                    pitch: usize,
+                ) {
+                    let appstate = unsafe { &mut *user.cast::<AppState>() };
+                    let surface = unsafe { &mut *SDL_GetWindowSurface(appstate.window) };
+
+                    unsafe {
+                        if SDL_MUSTLOCK(surface) {
+                            SDL_LockSurface(surface);
+                        }
+                        for y in 0..surface.h as usize {
+                            for x in 0..surface.w as usize {
+                                *surface
+                                    .pixels
+                                    .cast::<u32>()
+                                    .add(y * surface.pitch as usize / size_of::<u32>() + x) =
+                                    *pixels.cast::<u32>().add(y * pitch / size_of::<u32>() + x)
+                                        | 0xff000000;
+                            }
+                        }
+                        if SDL_MUSTLOCK(surface) {
+                            SDL_UnlockSurface(surface);
+                        }
+
+                        SDL_UpdateWindowSurface(appstate.window);
+                    }
+                }
+                video_refresh
+            }),
+            audio_sample_batch: Some({
+                extern "C" fn audio_sample_batch(
+                    user: *mut c_void,
+                    data: *const i16,
+                    frames: usize,
+                ) -> usize {
+                    let appstate = unsafe { &mut *user.cast::<AppState>() };
+                    unsafe {
+                        SDL_PutAudioStreamData(
+                            appstate.stream,
+                            data.cast(),
+                            (frames * size_of::<i16>() * 2) as i32,
+                        );
+                    }
+                    frames
+                }
+                audio_sample_batch
+            }),
+        };
+
+        // load game
+        let game = fs::read("smw.sfc").unwrap();
 
         *appstate = Box::into_raw(Box::new(AppState {
             window,
-            renderer,
+            stream,
             gamepad: ptr::null_mut(),
             gamepad_state: 0,
             smw: Smw::new(Box::new(Callbacks {})),
         }))
         .cast();
+
+        // init bsnes-mercury
+        sfc_init(*appstate, &CLBK, game.as_ptr(), game.len());
 
         SDL_APP_CONTINUE
     }
@@ -96,6 +171,15 @@ extern "C" fn appinit(
 
 extern "C" fn appiter(appstate: *mut c_void) -> SDL_AppResult {
     let appstate = unsafe { &mut *appstate.cast::<AppState>() };
+
+    // do we need more audio?
+    if unsafe { SDL_GetAudioStreamQueued(appstate.stream) < 0x1000 } {
+        // run the game loop to get more audio
+        // this synchronizes audio and video for us :)
+        unsafe {
+            sfc_iter((&raw mut *appstate).cast());
+        }
+    }
 
     SDL_APP_CONTINUE
 }
@@ -174,8 +258,8 @@ extern "C" fn appevent(appstate: *mut c_void, event: *mut SDL_Event) -> SDL_AppR
 extern "C" fn appquit(appstate: *mut c_void, _result: SDL_AppResult) {
     if !appstate.is_null() {
         unsafe {
-            let appstate = Box::from_raw(appstate.cast::<AppState>());
-            SDL_DestroyRenderer(appstate.renderer);
+            let mut appstate = Box::from_raw(appstate.cast::<AppState>());
+            sfc_quit((&raw mut *appstate).cast());
             SDL_DestroyWindow(appstate.window);
         }
     }

@@ -5,3 +5,7 @@ edition = "2024"
 
 [dependencies]
 sdl3-sys = "*"
+
+[build-dependencies]
+bindgen = "*"
+cc = "*"

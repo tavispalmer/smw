@@ -1,0 +1,3 @@
+[submodule "bsnes-mercury-wrapper/bsnes-mercury"]
+	path = bsnes-mercury-wrapper/bsnes-mercury
+	url = https://github.com/tavispalmer/bsnes-mercury.git

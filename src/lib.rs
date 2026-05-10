@@ -1,5 +1,7 @@
 mod r65816;
 
+include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
 pub trait Bind {
     fn video_refresh(
         &mut self,
