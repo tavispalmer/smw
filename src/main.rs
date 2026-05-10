@@ -1,5 +1,5 @@
 use std::{
-    ffi::{CStr, c_char, c_int, c_uint, c_void},
+    ffi::{CStr, c_char, c_int, c_void},
     fs,
     process::ExitCode,
     ptr,
@@ -13,16 +13,16 @@ use sdl3_sys::{
     },
     error::SDL_GetError,
     events::{
-        SDL_EVENT_GAMEPAD_ADDED, SDL_EVENT_GAMEPAD_BUTTON_DOWN, SDL_EVENT_GAMEPAD_BUTTON_UP,
-        SDL_EVENT_GAMEPAD_REMOVED, SDL_EVENT_QUIT, SDL_Event, SDL_EventType,
+        SDL_EVENT_GAMEPAD_ADDED, SDL_EVENT_GAMEPAD_REMOVED, SDL_EVENT_QUIT, SDL_Event,
+        SDL_EventType,
     },
     gamepad::{
         SDL_CloseGamepad, SDL_GAMEPAD_BUTTON_BACK, SDL_GAMEPAD_BUTTON_DPAD_DOWN,
         SDL_GAMEPAD_BUTTON_DPAD_LEFT, SDL_GAMEPAD_BUTTON_DPAD_RIGHT, SDL_GAMEPAD_BUTTON_DPAD_UP,
         SDL_GAMEPAD_BUTTON_EAST, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, SDL_GAMEPAD_BUTTON_NORTH,
         SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, SDL_GAMEPAD_BUTTON_SOUTH, SDL_GAMEPAD_BUTTON_START,
-        SDL_GAMEPAD_BUTTON_WEST, SDL_Gamepad, SDL_GamepadButton, SDL_GetGamepadButton,
-        SDL_GetGamepadID, SDL_OpenGamepad,
+        SDL_GAMEPAD_BUTTON_WEST, SDL_Gamepad, SDL_GetGamepadButton, SDL_GetGamepadID,
+        SDL_OpenGamepad,
     },
     init::{
         SDL_APP_CONTINUE, SDL_APP_FAILURE, SDL_APP_SUCCESS, SDL_AppResult, SDL_INIT_AUDIO,
@@ -31,7 +31,6 @@ use sdl3_sys::{
     log::SDL_Log,
     main::{SDL_EnterAppMainCallbacks, SDL_RunApp},
     pixels::SDL_PIXELFORMAT_XRGB8888,
-    rect::SDL_Rect,
     surface::{
         SDL_BlitSurfaceScaled, SDL_CreateSurface, SDL_LockSurface, SDL_MUSTLOCK,
         SDL_SCALEMODE_NEAREST, SDL_Surface, SDL_UnlockSurface,
@@ -41,11 +40,7 @@ use sdl3_sys::{
         SDL_Window, SDL_WindowFlags,
     },
 };
-use smw::{Bind, SfcCallbacks, Smw, sfc_init, sfc_iter, sfc_quit};
-
-struct Callbacks {}
-
-impl Bind for Callbacks {}
+use smw::{Callbacks, Smw};
 
 struct AppState {
     pub window: *mut SDL_Window,
@@ -53,7 +48,91 @@ struct AppState {
     pub stream: *mut SDL_AudioStream,
     pub gamepad: *mut SDL_Gamepad,
     pub gamepad_state: u16,
-    pub smw: Smw,
+}
+
+impl Callbacks for AppState {
+    fn video_refresh(&mut self, data: &[u32], width: usize, height: usize, pitch: usize) {
+        let surface = unsafe { &mut *self.surface };
+
+        unsafe {
+            if SDL_MUSTLOCK(surface) {
+                SDL_LockSurface(surface);
+            }
+            for y in 0..224 as usize {
+                for x in 46..256 + 46 as usize {
+                    *surface
+                        .pixels
+                        .cast::<u32>()
+                        .add(y * surface.pitch as usize / size_of::<u32>() + x) =
+                        data[y * pitch / size_of::<u32>() + x - 46] | 0xff000000;
+                }
+            }
+            if SDL_MUSTLOCK(surface) {
+                SDL_UnlockSurface(surface);
+            }
+
+            let window_surface = &mut *SDL_GetWindowSurface(self.window);
+            SDL_BlitSurfaceScaled(
+                surface,
+                ptr::null(),
+                window_surface,
+                ptr::null(),
+                SDL_SCALEMODE_NEAREST,
+            );
+            SDL_UpdateWindowSurface(self.window);
+        }
+    }
+
+    fn audio_sample_batch(&mut self, data: &[i16]) -> usize {
+        unsafe {
+            SDL_PutAudioStreamData(
+                self.stream,
+                data.as_ptr().cast(),
+                (data.len() * size_of::<i16>()) as i32,
+            );
+        }
+        data.len() / 2
+    }
+
+    fn input_poll(&mut self) {
+        // poll the buttons we care about
+        if !self.gamepad.is_null() {
+            unsafe {
+                self.gamepad_state = ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_SOUTH)
+                    as u16)
+                    << 0)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_WEST) as u16) << 1)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_BACK) as u16) << 2)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_START) as u16) << 3)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_DPAD_UP) as u16)
+                        << 4)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_DPAD_DOWN) as u16)
+                        << 5)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_DPAD_LEFT) as u16)
+                        << 6)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT) as u16)
+                        << 7)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_EAST) as u16) << 8)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_NORTH) as u16) << 9)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER)
+                        as u16)
+                        << 10)
+                    | ((SDL_GetGamepadButton(self.gamepad, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER)
+                        as u16)
+                        << 11);
+            }
+        } else {
+            self.gamepad_state = 0;
+        }
+    }
+
+    fn input_state(&mut self, port: u32, device: u32, index: u32, id: u32) -> i16 {
+        if port == 0 && device == 1 && index == 0 {
+            ((self.gamepad_state & (1 << id)) != 0) as i16
+        } else {
+            0
+        }
+    }
 }
 
 extern "C" fn appinit(
@@ -109,199 +188,42 @@ extern "C" fn appinit(
 
         // SDL_SetRenderLogicalPresentation(renderer, 800, 600, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
-        // setup callbacks
-        const CLBK: SfcCallbacks = SfcCallbacks {
-            video_refresh: Some({
-                extern "C" fn video_refresh(
-                    user: *mut c_void,
-                    pixels: *const c_void,
-                    width: c_uint,
-                    height: c_uint,
-                    pitch: usize,
-                ) {
-                    let appstate = unsafe { &mut *user.cast::<AppState>() };
-                    let surface = unsafe { &mut *appstate.surface };
-
-                    unsafe {
-                        if SDL_MUSTLOCK(surface) {
-                            SDL_LockSurface(surface);
-                        }
-                        for y in 0..224 as usize {
-                            for x in 46..256 + 46 as usize {
-                                *surface
-                                    .pixels
-                                    .cast::<u32>()
-                                    .add(y * surface.pitch as usize / size_of::<u32>() + x) =
-                                    *pixels
-                                        .cast::<u32>()
-                                        .add(y * pitch / size_of::<u32>() + x - 46)
-                                        | 0xff000000;
-                            }
-                        }
-                        if SDL_MUSTLOCK(surface) {
-                            SDL_UnlockSurface(surface);
-                        }
-
-                        let window_surface = &mut *SDL_GetWindowSurface(appstate.window);
-                        SDL_BlitSurfaceScaled(
-                            surface,
-                            ptr::null(),
-                            window_surface,
-                            ptr::null(),
-                            SDL_SCALEMODE_NEAREST,
-                        );
-                        SDL_UpdateWindowSurface(appstate.window);
-                    }
-                }
-                video_refresh
-            }),
-            audio_sample_batch: Some({
-                extern "C" fn audio_sample_batch(
-                    user: *mut c_void,
-                    data: *const i16,
-                    frames: usize,
-                ) -> usize {
-                    let appstate = unsafe { &mut *user.cast::<AppState>() };
-                    unsafe {
-                        SDL_PutAudioStreamData(
-                            appstate.stream,
-                            data.cast(),
-                            (frames * size_of::<i16>() * 2) as i32,
-                        );
-                    }
-                    frames
-                }
-                audio_sample_batch
-            }),
-            input_poll: Some({
-                extern "C" fn input_poll(user: *mut c_void) {
-                    let appstate = unsafe { &mut *user.cast::<AppState>() };
-
-                    // poll the buttons we care about
-                    if !appstate.gamepad.is_null() {
-                        unsafe {
-                            appstate.gamepad_state =
-                                ((SDL_GetGamepadButton(appstate.gamepad, SDL_GAMEPAD_BUTTON_SOUTH)
-                                    as u16)
-                                    << 0)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_WEST,
-                                    ) as u16)
-                                        << 1)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_BACK,
-                                    ) as u16)
-                                        << 2)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_START,
-                                    ) as u16)
-                                        << 3)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_DPAD_UP,
-                                    ) as u16)
-                                        << 4)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_DPAD_DOWN,
-                                    ) as u16)
-                                        << 5)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_DPAD_LEFT,
-                                    ) as u16)
-                                        << 6)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
-                                    ) as u16)
-                                        << 7)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_EAST,
-                                    ) as u16)
-                                        << 8)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_NORTH,
-                                    ) as u16)
-                                        << 9)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
-                                    ) as u16)
-                                        << 10)
-                                    | ((SDL_GetGamepadButton(
-                                        appstate.gamepad,
-                                        SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,
-                                    ) as u16)
-                                        << 11);
-                        }
-                    } else {
-                        appstate.gamepad_state = 0;
-                    }
-                }
-                input_poll
-            }),
-            input_state: Some({
-                extern "C" fn input_state(
-                    user: *mut c_void,
-                    port: c_uint,
-                    device: c_uint,
-                    index: c_uint,
-                    id: c_uint,
-                ) -> i16 {
-                    let appstate = unsafe { &mut *user.cast::<AppState>() };
-                    if port == 0 && device == 1 && index == 0 {
-                        ((appstate.gamepad_state & (1 << id)) != 0) as i16
-                    } else {
-                        0
-                    }
-                }
-                input_state
-            }),
-        };
-
         // load game
         let game = fs::read("smw.sfc").unwrap();
 
-        *appstate = Box::into_raw(Box::new(AppState {
-            window,
-            surface,
-            stream,
-            gamepad: ptr::null_mut(),
-            gamepad_state: 0,
-            smw: Smw::new(Box::new(Callbacks {})),
-        }))
+        *appstate = Box::into_raw(Box::new(Smw::new(
+            AppState {
+                window,
+                surface,
+                stream,
+                gamepad: ptr::null_mut(),
+                gamepad_state: 0,
+            },
+            &game,
+        )))
         .cast();
-
-        // init bsnes-mercury
-        sfc_init(*appstate, &CLBK, game.as_ptr(), game.len());
 
         SDL_APP_CONTINUE
     }
 }
 
 extern "C" fn appiter(appstate: *mut c_void) -> SDL_AppResult {
-    let appstate = unsafe { &mut *appstate.cast::<AppState>() };
+    let smw = unsafe { &mut *appstate.cast::<Smw<AppState>>() };
+    let appstate = &mut smw.c;
 
     // do we need more audio?
     if unsafe { SDL_GetAudioStreamQueued(appstate.stream) < 0x1000 } {
         // run the game loop to get more audio
         // this synchronizes audio and video for us :)
-        unsafe {
-            sfc_iter((&raw mut *appstate).cast());
-        }
+        smw.iter();
     }
 
     SDL_APP_CONTINUE
 }
 
 extern "C" fn appevent(appstate: *mut c_void, event: *mut SDL_Event) -> SDL_AppResult {
-    let appstate = unsafe { &mut *appstate.cast::<AppState>() };
+    let smw = unsafe { &mut *appstate.cast::<Smw<AppState>>() };
+    let appstate = &mut smw.c;
     let event = unsafe { &mut *event };
     match SDL_EventType(unsafe { event.r#type }) {
         SDL_EVENT_QUIT => return SDL_APP_SUCCESS,
@@ -333,8 +255,8 @@ extern "C" fn appevent(appstate: *mut c_void, event: *mut SDL_Event) -> SDL_AppR
 extern "C" fn appquit(appstate: *mut c_void, _result: SDL_AppResult) {
     if !appstate.is_null() {
         unsafe {
-            let mut appstate = Box::from_raw(appstate.cast::<AppState>());
-            sfc_quit((&raw mut *appstate).cast());
+            let mut smw = Box::from_raw(appstate.cast::<Smw<AppState>>());
+            let appstate = &mut smw.c;
             SDL_DestroyWindow(appstate.window);
         }
     }
