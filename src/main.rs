@@ -21,7 +21,8 @@ use sdl3_sys::{
         SDL_GAMEPAD_BUTTON_DPAD_LEFT, SDL_GAMEPAD_BUTTON_DPAD_RIGHT, SDL_GAMEPAD_BUTTON_DPAD_UP,
         SDL_GAMEPAD_BUTTON_EAST, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, SDL_GAMEPAD_BUTTON_NORTH,
         SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, SDL_GAMEPAD_BUTTON_SOUTH, SDL_GAMEPAD_BUTTON_START,
-        SDL_GAMEPAD_BUTTON_WEST, SDL_Gamepad, SDL_GamepadButton, SDL_GetGamepadID, SDL_OpenGamepad,
+        SDL_GAMEPAD_BUTTON_WEST, SDL_Gamepad, SDL_GamepadButton, SDL_GetGamepadButton,
+        SDL_GetGamepadID, SDL_OpenGamepad,
     },
     init::{
         SDL_APP_CONTINUE, SDL_APP_FAILURE, SDL_APP_SUCCESS, SDL_AppResult, SDL_INIT_AUDIO,
@@ -29,7 +30,12 @@ use sdl3_sys::{
     },
     log::SDL_Log,
     main::{SDL_EnterAppMainCallbacks, SDL_RunApp},
-    surface::{SDL_LockSurface, SDL_MUSTLOCK, SDL_UnlockSurface},
+    pixels::SDL_PIXELFORMAT_XRGB8888,
+    rect::SDL_Rect,
+    surface::{
+        SDL_BlitSurfaceScaled, SDL_CreateSurface, SDL_LockSurface, SDL_MUSTLOCK,
+        SDL_SCALEMODE_NEAREST, SDL_Surface, SDL_UnlockSurface,
+    },
     video::{
         SDL_CreateWindow, SDL_DestroyWindow, SDL_GetWindowSurface, SDL_UpdateWindowSurface,
         SDL_Window, SDL_WindowFlags,
@@ -43,6 +49,7 @@ impl Bind for Callbacks {}
 
 struct AppState {
     pub window: *mut SDL_Window,
+    pub surface: *mut SDL_Surface,
     pub stream: *mut SDL_AudioStream,
     pub gamepad: *mut SDL_Gamepad,
     pub gamepad_state: u16,
@@ -68,10 +75,17 @@ extern "C" fn appinit(
             return SDL_APP_FAILURE;
         }
 
-        let window = SDL_CreateWindow(c"smw".as_ptr(), 256, 240, SDL_WindowFlags(0));
+        let window = SDL_CreateWindow(
+            c"smw".as_ptr(),
+            (256.0f64 * ((135000000.0 / 11.0) / (21477272.0 / 2.0))).round() as i32 * 3, // 293
+            224 * 3,
+            SDL_WindowFlags(0),
+        );
         if window.is_null() {
             return SDL_APP_FAILURE;
         }
+
+        let surface = SDL_CreateSurface(256, 224, SDL_PIXELFORMAT_XRGB8888);
 
         let spec = SDL_AudioSpec {
             format: SDL_AUDIO_S16,
@@ -105,7 +119,7 @@ extern "C" fn appinit(
                     pitch: usize,
                 ) {
                     let appstate = unsafe { &mut *user.cast::<AppState>() };
-                    let surface = unsafe { &mut *SDL_GetWindowSurface(appstate.window) };
+                    let surface = unsafe { &mut *appstate.surface };
 
                     unsafe {
                         if SDL_MUSTLOCK(surface) {
@@ -125,6 +139,14 @@ extern "C" fn appinit(
                             SDL_UnlockSurface(surface);
                         }
 
+                        let window_surface = &mut *SDL_GetWindowSurface(appstate.window);
+                        SDL_BlitSurfaceScaled(
+                            surface,
+                            ptr::null(),
+                            window_surface,
+                            ptr::null(),
+                            SDL_SCALEMODE_NEAREST,
+                        );
                         SDL_UpdateWindowSurface(appstate.window);
                     }
                 }
@@ -148,6 +170,96 @@ extern "C" fn appinit(
                 }
                 audio_sample_batch
             }),
+            input_poll: Some({
+                extern "C" fn input_poll(user: *mut c_void) {
+                    let appstate = unsafe { &mut *user.cast::<AppState>() };
+
+                    // poll the buttons we care about
+                    if !appstate.gamepad.is_null() {
+                        unsafe {
+                            appstate.gamepad_state =
+                                ((SDL_GetGamepadButton(appstate.gamepad, SDL_GAMEPAD_BUTTON_SOUTH)
+                                    as u16)
+                                    << 0)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_WEST,
+                                    ) as u16)
+                                        << 1)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_BACK,
+                                    ) as u16)
+                                        << 2)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_START,
+                                    ) as u16)
+                                        << 3)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_DPAD_UP,
+                                    ) as u16)
+                                        << 4)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_DPAD_DOWN,
+                                    ) as u16)
+                                        << 5)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_DPAD_LEFT,
+                                    ) as u16)
+                                        << 6)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
+                                    ) as u16)
+                                        << 7)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_EAST,
+                                    ) as u16)
+                                        << 8)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_NORTH,
+                                    ) as u16)
+                                        << 9)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
+                                    ) as u16)
+                                        << 10)
+                                    | ((SDL_GetGamepadButton(
+                                        appstate.gamepad,
+                                        SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,
+                                    ) as u16)
+                                        << 11);
+                        }
+                    } else {
+                        appstate.gamepad_state = 0;
+                    }
+                }
+                input_poll
+            }),
+            input_state: Some({
+                extern "C" fn input_state(
+                    user: *mut c_void,
+                    port: c_uint,
+                    device: c_uint,
+                    index: c_uint,
+                    id: c_uint,
+                ) -> i16 {
+                    let appstate = unsafe { &mut *user.cast::<AppState>() };
+                    if port == 0 && device == 1 && index == 0 {
+                        ((appstate.gamepad_state & (1 << id)) != 0) as i16
+                    } else {
+                        0
+                    }
+                }
+                input_state
+            }),
         };
 
         // load game
@@ -155,6 +267,7 @@ extern "C" fn appinit(
 
         *appstate = Box::into_raw(Box::new(AppState {
             window,
+            surface,
             stream,
             gamepad: ptr::null_mut(),
             gamepad_state: 0,
@@ -205,49 +318,8 @@ extern "C" fn appevent(appstate: *mut c_void, event: *mut SDL_Event) -> SDL_AppR
             if !appstate.gamepad.is_null()
                 && (SDL_GetGamepadID(appstate.gamepad) == event.gdevice.which.0)
             {
-                appstate.gamepad_state = 0;
                 SDL_CloseGamepad(appstate.gamepad);
                 appstate.gamepad = ptr::null_mut();
-            }
-        },
-        SDL_EVENT_GAMEPAD_BUTTON_DOWN => unsafe {
-            if SDL_GetGamepadID(appstate.gamepad) == event.gbutton.which.0 {
-                match SDL_GamepadButton(event.gbutton.button as i32) {
-                    SDL_GAMEPAD_BUTTON_SOUTH => appstate.gamepad_state |= 0b0000_0000_0001,
-                    SDL_GAMEPAD_BUTTON_WEST => appstate.gamepad_state |= 0b0000_0000_0010,
-                    SDL_GAMEPAD_BUTTON_BACK => appstate.gamepad_state |= 0b0000_0000_0100,
-                    SDL_GAMEPAD_BUTTON_START => appstate.gamepad_state |= 0b0000_0000_1000,
-                    SDL_GAMEPAD_BUTTON_DPAD_UP => appstate.gamepad_state |= 0b0000_0001_0000,
-                    SDL_GAMEPAD_BUTTON_DPAD_DOWN => appstate.gamepad_state |= 0b0000_0010_0000,
-                    SDL_GAMEPAD_BUTTON_DPAD_LEFT => appstate.gamepad_state |= 0b0000_0100_0000,
-                    SDL_GAMEPAD_BUTTON_DPAD_RIGHT => appstate.gamepad_state |= 0b0000_1000_0000,
-                    SDL_GAMEPAD_BUTTON_EAST => appstate.gamepad_state |= 0b0001_0000_0000,
-                    SDL_GAMEPAD_BUTTON_NORTH => appstate.gamepad_state |= 0b0010_0000_0000,
-                    SDL_GAMEPAD_BUTTON_LEFT_SHOULDER => appstate.gamepad_state |= 0b0100_0000_0000,
-                    SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER => appstate.gamepad_state |= 0b1000_0000_0000,
-                    _ => {}
-                }
-            }
-        },
-        SDL_EVENT_GAMEPAD_BUTTON_UP => unsafe {
-            if SDL_GetGamepadID(appstate.gamepad) == event.gbutton.which.0 {
-                match SDL_GamepadButton(event.gbutton.button as i32) {
-                    SDL_GAMEPAD_BUTTON_SOUTH => appstate.gamepad_state &= !0b0000_0000_0001,
-                    SDL_GAMEPAD_BUTTON_WEST => appstate.gamepad_state &= !0b0000_0000_0010,
-                    SDL_GAMEPAD_BUTTON_BACK => appstate.gamepad_state &= !0b0000_0000_0100,
-                    SDL_GAMEPAD_BUTTON_START => appstate.gamepad_state &= !0b0000_0000_1000,
-                    SDL_GAMEPAD_BUTTON_DPAD_UP => appstate.gamepad_state &= !0b0000_0001_0000,
-                    SDL_GAMEPAD_BUTTON_DPAD_DOWN => appstate.gamepad_state &= !0b0000_0010_0000,
-                    SDL_GAMEPAD_BUTTON_DPAD_LEFT => appstate.gamepad_state &= !0b0000_0100_0000,
-                    SDL_GAMEPAD_BUTTON_DPAD_RIGHT => appstate.gamepad_state &= !0b0000_1000_0000,
-                    SDL_GAMEPAD_BUTTON_EAST => appstate.gamepad_state &= !0b0001_0000_0000,
-                    SDL_GAMEPAD_BUTTON_NORTH => appstate.gamepad_state &= !0b0010_0000_0000,
-                    SDL_GAMEPAD_BUTTON_LEFT_SHOULDER => appstate.gamepad_state &= !0b0100_0000_0000,
-                    SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER => {
-                        appstate.gamepad_state &= !0b1000_0000_0000
-                    }
-                    _ => {}
-                }
             }
         },
         _ => {}

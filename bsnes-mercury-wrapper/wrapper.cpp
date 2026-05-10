@@ -57,8 +57,18 @@ struct Callbacks : Emulator::Interface::Bind {
   vector<int16_t> sample_buf;
   size_t sample_buf_pos;
 
+  bool input_polled;
+
   void videoRefresh(const uint32_t *palette, const uint32_t *data,
                     unsigned pitch, unsigned width, unsigned height) override {
+    data += 8 * 1024;
+
+    if (height == 240) {
+      height = 224;
+    } else if (height == 480) {
+      height = 448;
+    }
+
     uint32_t *ptr = video_buffer;
     for (size_t y = 0; y < height; y++, data += pitch >> 2, ptr += width) {
       for (size_t x = 0; x < width; x++) {
@@ -77,6 +87,22 @@ struct Callbacks : Emulator::Interface::Bind {
     }
     sample_buf[sample_buf_pos++] = left;
     sample_buf[sample_buf_pos++] = right;
+  }
+
+  int16_t inputPoll(unsigned port, unsigned device, unsigned id) override {
+    if (id > 11) {
+      return 0;
+    }
+    if (!input_polled) {
+      clbk->input_poll(user);
+      input_polled = true;
+    }
+    return clbk->input_state(user, port,
+                             (SuperFamicom::Input::Device)device ==
+                                     SuperFamicom::Input::Device::Joypad
+                                 ? 1
+                                 : 0,
+                             0, id);
   }
 
   void loadRequest(unsigned id, string p) override {
@@ -164,6 +190,7 @@ void sfc_init(void *user, const SfcCallbacks *clbk, const uint8_t *buf,
 
 void sfc_iter(void *user) {
   UserGuard userGuard(user);
+  sfc_bind.input_polled = false;
   SuperFamicom::system.run();
   if (sfc_bind.sample_buf_pos) {
     sfc_bind.clbk->audio_sample_batch(sfc_bind.user, sfc_bind.sample_buf.data(),

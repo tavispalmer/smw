@@ -12,6 +12,10 @@ typedef struct {
   void (*video_refresh)(void *user, const void *data, unsigned width,
                         unsigned height, size_t pitch);
   size_t (*audio_sample_batch)(void *user, const int16_t *data, size_t frames);
+  void (*input_poll)(void *user);
+  int16_t (*input_state)(void *user, unsigned port, unsigned device,
+                         unsigned index, unsigned id);
+
 } SfcCallbacks;
 
 void sfc_init(void *user, const SfcCallbacks *clbk, const uint8_t *buf,

@@ -1,3 +1,5 @@
+-DPROFILE_PERFORMANCE
+-D__LIBRETRO__
 -Ibsnes-mercury
 -Ibsnes-mercury/sfc
 -Ibsnes-mercury/libco
