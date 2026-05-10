@@ -82,13 +82,11 @@ struct Callbacks : Emulator::Interface::Bind {
   void loadRequest(unsigned id, string p) override {
     switch (id) {
     case SuperFamicom::ID::IPLROM: {
-      fprintf(stderr, "iplrom!\n");
       memorystream stream(iplrom, sizeof(iplrom));
       iface->load(id, stream);
     } break;
 
     case SuperFamicom::ID::Manifest: {
-      fprintf(stderr, "manifest!\n");
       string xmlrom = SuperFamicomCartridge(buf, len).markup;
       memorystream stream((const uint8_t *)(const char *)xmlrom,
                           xmlrom.length());
@@ -96,13 +94,11 @@ struct Callbacks : Emulator::Interface::Bind {
     } break;
 
     case SuperFamicom::ID::ROM: {
-      fprintf(stderr, "rom!\n");
       memorystream stream(buf, len);
       iface->load(id, stream);
     } break;
 
     case SuperFamicom::ID::RAM: {
-      fprintf(stderr, "ram!\n");
       sram = SuperFamicom::cartridge.ram.data();
       sram_size = SuperFamicom::cartridge.ram.size();
     } break;
