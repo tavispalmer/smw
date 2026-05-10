@@ -77,7 +77,8 @@ extern "C" fn appinit(
 
         let window = SDL_CreateWindow(
             c"smw".as_ptr(),
-            (256.0f64 * ((135000000.0 / 11.0) / (21477272.0 / 2.0))).round() as i32 * 3, // 293
+            398 * 3,
+            // (256.0f64 * ((135000000.0 / 11.0) / (21477272.0 / 2.0))).round() as i32 * 3, // 293
             224 * 3,
             SDL_WindowFlags(0),
         );
@@ -85,7 +86,7 @@ extern "C" fn appinit(
             return SDL_APP_FAILURE;
         }
 
-        let surface = SDL_CreateSurface(256, 224, SDL_PIXELFORMAT_XRGB8888);
+        let surface = SDL_CreateSurface(348, 224, SDL_PIXELFORMAT_XRGB8888);
 
         let spec = SDL_AudioSpec {
             format: SDL_AUDIO_S16,
@@ -125,13 +126,15 @@ extern "C" fn appinit(
                         if SDL_MUSTLOCK(surface) {
                             SDL_LockSurface(surface);
                         }
-                        for y in 0..surface.h as usize {
-                            for x in 0..surface.w as usize {
+                        for y in 0..224 as usize {
+                            for x in 46..256 + 46 as usize {
                                 *surface
                                     .pixels
                                     .cast::<u32>()
                                     .add(y * surface.pitch as usize / size_of::<u32>() + x) =
-                                    *pixels.cast::<u32>().add(y * pitch / size_of::<u32>() + x)
+                                    *pixels
+                                        .cast::<u32>()
+                                        .add(y * pitch / size_of::<u32>() + x - 46)
                                         | 0xff000000;
                             }
                         }
